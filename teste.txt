@@ -12,4 +12,9 @@ Este é um teste para ver se o uso de branch novas está funcionando...
 
 04/04/2026
 
-- Eduardo Souza está realizando testes no git 
+
+
+- Este é um teste para ver se o uso de branch novas está funcionando... 
+
+~ Eduardo Souza
+06/04/2026
