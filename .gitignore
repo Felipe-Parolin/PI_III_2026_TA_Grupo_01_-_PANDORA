@@ -1,0 +1,29 @@
+# Ambiente Virtual
+venv/
+.venv/
+env/
+venv.bak/
+
+# Configurações de Editores (PyCharm e VS Code)
+.idea/
+.vscode/
+*.swp
+*.iml
+
+# Python - Arquivos compilados e cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Django - Variáveis de ambiente e Segredos
+.env
+local_settings.py
+
+# Arquivos de Sistema
+Thumbs.db
+.DS_Store
+
+# Pastas de Media/Static (Opcional - remova se quiser subir arquivos de teste)
+media/
+staticfiles/
