@@ -3,7 +3,6 @@ from django.db import models
 class Empresa(models.Model):
     nome_fantasia = models.CharField(max_length=255)
     cnpj = models.CharField(max_length=18, unique=True)
-    id_interno = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
         return self.nome_fantasia
@@ -25,28 +24,33 @@ class Usuarios(models.Model):
     nome_usuario = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
     senha_hash = models.CharField(max_length=255)
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='usuarios')
     perfil = models.ForeignKey(Perfil, on_delete=models.PROTECT)
-    setor = models.ForeignKey(Setor, on_delete=models.SET_NULL, null=True)
+    setor = models.ForeignKey(Setor, on_delete=models.SET_NULL, null=True, blank=True)
+    ativo = models.BooleanField(default=True)
 
     def __str__(self):
         return self.nome_usuario
-
-class Manual(models.Model):
-    tipo_arquivo = models.CharField(max_length=50)
-    caminho_url = models.URLField(max_length=500) # Ou models.FileField() se for fazer upload direto
 
 class Equipamento(models.Model):
     nome_equipamento = models.CharField(max_length=255)
     tipo_equipamento = models.CharField(max_length=100)
     criticidade = models.IntegerField()
-    qr_code = models.CharField(max_length=255, unique=True)
     status_ativo = models.BooleanField(default=True)
     setor = models.ForeignKey(Setor, on_delete=models.CASCADE)
-    manual = models.ForeignKey(Manual, on_delete=models.SET_NULL, null=True, blank=True)
     id_interno = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
         return self.nome_equipamento
+
+
+class Manual(models.Model):
+    tipo_arquivo = models.CharField(max_length=50)
+    caminho_url = models.URLField(max_length=500)
+    equipamento = models.ForeignKey(Equipamento, on_delete=models.CASCADE, related_name='manuais')
+
+    def __str__(self):
+        return f"{self.tipo_arquivo} - {self.equipamento.nome_equipamento}"
 
 class Ordem_servico(models.Model):
     data_abertura = models.DateTimeField(auto_now_add=True)
