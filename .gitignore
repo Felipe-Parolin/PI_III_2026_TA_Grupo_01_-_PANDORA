@@ -1,29 +1,57 @@
-# Ambiente Virtual
+# --- Logs & Debugging ---
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# --- Dependências e Builds ---
+node_modules/
+dist/
+dist-ssr/
+coverage/
+*.tsbuildinfo
+.eslintcache
+
+# --- Python & Ambientes Virtuais ---
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
 venv/
 .venv/
 env/
 venv.bak/
 
-# Configurações de Editores (PyCharm e VS Code)
+# --- Django ---
+.env
+local_settings.py
+media/
+staticfiles/
+
+# --- Ferramentas de Teste (Cypress/Vitest) ---
+/cypress/videos/
+/cypress/screenshots/
+__screenshots__/
+
+# --- Vite ---
+*.timestamp-*-*.mjs
+
+# --- Editores e IDEs (VS Code, JetBrains, etc) ---
+.vscode/*
+!.vscode/extensions.json
 .idea/
-.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 *.swp
 *.iml
 
-# Python - Arquivos compilados e cache
-__pycache__/
-*.py[cod]
-*$py.class
-.pytest_cache/
-
-# Django - Variáveis de ambiente e Segredos
-.env
-local_settings.py
-
-# Arquivos de Sistema
-Thumbs.db
+# --- Arquivos de Sistema ---
 .DS_Store
-
-# Pastas de Media/Static (Opcional - remova se quiser subir arquivos de teste)
-media/
-staticfiles/
+Thumbs.db
+*.local
