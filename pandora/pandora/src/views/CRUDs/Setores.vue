@@ -8,7 +8,7 @@
       </div>
     </section>
 
-    <section v-if="canCreate || canEdit" class="card form-card">
+    <section class="card form-card">
       <div class="card-header">
         <h3>{{ isEditing ? 'Editar setor' : 'Novo setor' }}</h3>
         <p>Preencha os dados abaixo para manter a estrutura sempre atualizada.</p>
@@ -27,7 +27,7 @@
       </form>
     </section>
 
-    <section v-if="canView" class="card table-card">
+    <section class="card table-card">
       <div class="card-header">
         <h3>Setores cadastrados</h3>
         <p>{{ setores.length }} registro(s) disponiveis.</p>
@@ -49,32 +49,21 @@
             <tr v-for="setor in setores" :key="setor.id">
               <td>{{ setor.id }}</td>
               <td>{{ setor.nome_setor }}</td>
-              <td>
-                <div class="action-buttons">
-                  <button v-if="canEdit" @click="editSetor(setor)" class="btn btn-row">Editar</button>
-                  <button v-if="canDelete" @click="deleteSetor(setor.id)" class="btn btn-danger">Excluir</button>
-                  <span v-if="!canEdit && !canDelete" class="empty-actions">Sem acoes disponiveis</span>
-                </div>
-              </td>
+              <td><div class="action-buttons">
+                <button @click="editSetor(setor)" class="btn btn-row">Editar</button>
+                <button @click="deleteSetor(setor.id)" class="btn btn-danger">Excluir</button>
+              </div></td>
             </tr>
           </tbody>
         </table>
-      </div>
-    </section>
-
-    <section v-if="!canView && !canCreate && !canEdit && !canDelete" class="card empty-card">
-      <div class="card-header">
-        <h3>Acesso indisponivel</h3>
-        <p>Este CRUD sera exibido somente quando alguma permissao de setores estiver liberada.</p>
       </div>
     </section>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { api } from '../../services/api'
-import { getStoredPermissions, hasPermission } from '../../utils/permissions'
 
 const setores = ref([])
 const isEditing = ref(false)
@@ -82,11 +71,6 @@ const editingId = ref(null)
 
 const empresaIdLocal = Number(localStorage.getItem('empresa_id'))
 const isEmpresaValida = Number.isInteger(empresaIdLocal) && empresaIdLocal > 0
-const permissions = computed(() => getStoredPermissions())
-const canView = computed(() => hasPermission('setores.visualizar', permissions.value))
-const canCreate = computed(() => hasPermission('setores.criar', permissions.value))
-const canEdit = computed(() => hasPermission('setores.editar', permissions.value))
-const canDelete = computed(() => hasPermission('setores.excluir', permissions.value))
 
 const createEmptyForm = () => ({
   nome_setor: '',
@@ -98,11 +82,6 @@ const pertenceAEmpresaLogada = (setor) => Number(setor?.empresa) === empresaIdLo
 const form = ref(createEmptyForm())
 
 const fetchData = async () => {
-  if (!canView.value) {
-    setores.value = []
-    return
-  }
-
   if (!isEmpresaValida) {
     setores.value = []
     alert('Empresa do usuario nao identificada. Faca login novamente.')
@@ -118,16 +97,6 @@ const fetchData = async () => {
 }
 
 const saveSetor = async () => {
-  if (!canCreate.value && !isEditing.value) {
-    alert('Voce nao possui permissao para criar setores.')
-    return
-  }
-
-  if (!canEdit.value && isEditing.value) {
-    alert('Voce nao possui permissao para editar setores.')
-    return
-  }
-
   if (!isEmpresaValida) {
     alert('Empresa do usuario nao identificada. Faca login novamente.')
     return
@@ -153,11 +122,6 @@ const saveSetor = async () => {
 }
 
 const editSetor = (setor) => {
-  if (!canEdit.value) {
-    alert('Voce nao possui permissao para editar setores.')
-    return
-  }
-
   if (!pertenceAEmpresaLogada(setor)) {
     alert('Voce so pode editar setores da sua empresa.')
     return
@@ -169,11 +133,6 @@ const editSetor = (setor) => {
 }
 
 const deleteSetor = async (id) => {
-  if (!canDelete.value) {
-    alert('Voce nao possui permissao para excluir setores.')
-    return
-  }
-
   if (confirm('Tem certeza que deseja excluir?')) {
     await api.delete('setores', id)
     await fetchData()
@@ -215,9 +174,7 @@ onMounted(fetchData)
 .data-table th { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; }
 .data-table td { color: #1e293b; }
 .action-buttons { display: flex; gap: 0.6rem; flex-wrap: wrap; }
-.empty-actions { color: #64748b; font-size: 0.9rem; }
 .empty-state { text-align: center; color: #64748b; padding: 1.5rem 1rem; }
-.empty-card { padding: 1.5rem; }
 @media (max-width: 768px) { .page-header, .form-card, .table-card { padding: 1.2rem; } .action-buttons, .form-actions { flex-direction: column; } .btn { width: 100%; } }
 </style>
 

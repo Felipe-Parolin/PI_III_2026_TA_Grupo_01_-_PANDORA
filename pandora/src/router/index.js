@@ -1,50 +1,19 @@
-import { createRouter, createWebHistory } from 'vue-router'
+﻿import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/Login.vue'
 import SolicitarAcesso from '../views/SolicitarAcesso.vue'
-import DashboardLayout from '../views/DashboardLayout.vue'
+import DashboardLayout from '../views/Dashboard.vue'
 
+import Grupos from '../views/CRUDs/Grupos.vue'
 import Setores from '../views/CRUDs/Setores.vue'
 import Usuarios from '../views/CRUDs/Usuarios.vue'
-import Manuais from '../views/CRUDs/Manuais.vue'
-import Equipamentos from '../views/CRUDs/Equipamentos.vue'
-import TecnicoChamadosAbertos from '../views/TecnicoChamadosAbertos.vue'
-import TecnicoHistoricoManutencoes from '../views/TecnicoHistoricoManutencoes.vue'
-import OperadorAbrirChamado from '../views/OperadorAbrirChamado.vue'
-import OperadorSituacaoChamado from '../views/OperadorSituacaoChamado.vue'
+import { getStoredPermissions, hasCrudPermission } from '../utils/permissions'
 
-const PERFIS = {
-  gerente: { id: '1', label: 'Gerente' },
-  tecnico: { id: '2', label: 'T\u00e9cnico de Manuten\u00e7\u00e3o' },
-  operador: { id: '3', label: 'Operador de M\u00e1quinas' }
-}
-
-const normalizeText = (value) =>
-  String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toLowerCase()
-
-const getPerfilKey = () => {
-  const perfilId = localStorage.getItem('perfil_id')
-  const tipoPerfil = localStorage.getItem('tipo_perfil') || ''
-  const normalized = normalizeText(tipoPerfil)
-
-  if (perfilId === PERFIS.gerente.id || normalized === 'gerente') return 'gerente'
-  if (perfilId === PERFIS.tecnico.id || normalized === 'tecnico de manutencao') return 'tecnico'
-  if (perfilId === PERFIS.operador.id || normalized === 'operador de maquinas') return 'operador'
-
-  return ''
-}
-
-const getDashboardHomeByPerfil = () => {
-  const perfilKey = getPerfilKey()
-
-  if (perfilKey === 'gerente') return '/dashboard/setores'
-  if (perfilKey === 'tecnico') return '/dashboard/chamados-abertos'
-  if (perfilKey === 'operador') return '/dashboard/abrir-chamado'
-
-  return '/'
+const getDashboardHome = () => {
+  const permissions = getStoredPermissions()
+  if (hasCrudPermission('grupos', permissions)) return '/dashboard/grupos'
+  if (hasCrudPermission('usuarios', permissions)) return '/dashboard/usuarios'
+  if (hasCrudPermission('setores', permissions)) return '/dashboard/setores'
+  return '/dashboard'
 }
 
 const routes = [
@@ -55,15 +24,9 @@ const routes = [
     component: DashboardLayout,
     meta: { requiresAuth: true },
     children: [
-      { path: '', redirect: () => getDashboardHomeByPerfil() },
-      { path: 'setores', component: Setores, meta: { title: 'Setores', allowedPerfis: ['gerente'] } },
-      { path: 'usuarios', component: Usuarios, meta: { title: 'Usu\u00e1rios', allowedPerfis: ['gerente'] } },
-      { path: 'manuais', component: Manuais, meta: { title: 'Manuais', allowedPerfis: ['gerente'] } },
-      { path: 'equipamentos', component: Equipamentos, meta: { title: 'Equipamentos', allowedPerfis: ['gerente'] } },
-      { path: 'chamados-abertos', component: TecnicoChamadosAbertos, meta: { title: 'Chamados Abertos', allowedPerfis: ['tecnico'] } },
-      { path: 'historico-manutencoes', component: TecnicoHistoricoManutencoes, meta: { title: 'Hist\u00f3rico de Manuten\u00e7\u00f5es', allowedPerfis: ['tecnico'] } },
-      { path: 'abrir-chamado', component: OperadorAbrirChamado, meta: { title: 'Abrir Chamado', allowedPerfis: ['operador'] } },
-      { path: 'situacao-chamado', component: OperadorSituacaoChamado, meta: { title: 'Situa\u00e7\u00e3o do Chamado', allowedPerfis: ['operador'] } }
+      { path: 'grupos', component: Grupos, meta: { title: 'Grupos', permissionPrefix: 'grupos' } },
+      { path: 'usuarios', component: Usuarios, meta: { title: 'Usuarios', permissionPrefix: 'usuarios' } },
+      { path: 'setores', component: Setores, meta: { title: 'Setores', permissionPrefix: 'setores' } }
     ]
   }
 ]
@@ -76,20 +39,23 @@ const router = createRouter({
 router.beforeEach((to) => {
   const token = localStorage.getItem('access_token')
   const sessionActive = localStorage.getItem('session_active') === 'true'
-  const perfilKey = getPerfilKey()
   const isAuthenticated = Boolean(token || sessionActive)
+  const dashboardHome = getDashboardHome()
 
   if (to.meta.requiresAuth && !isAuthenticated) {
     return '/'
   }
 
   if (to.meta.guestOnly && isAuthenticated) {
-    return getDashboardHomeByPerfil()
+    return dashboardHome
   }
 
-  const allowedPerfis = to.meta.allowedPerfis
-  if (allowedPerfis?.length && !allowedPerfis.includes(perfilKey)) {
-    return getDashboardHomeByPerfil()
+  if (to.path === '/dashboard' && dashboardHome !== '/dashboard') {
+    return dashboardHome
+  }
+
+  if (to.meta.permissionPrefix && !hasCrudPermission(to.meta.permissionPrefix)) {
+    return dashboardHome
   }
 
   return true
