@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="page-container">
     <div class="auth-card">
       <aside class="brand-panel">
@@ -8,7 +8,7 @@
             O motor da sua indústria não pode parar. Gestão inteligente de chamados e manutenção de máquinas em um só lugar.
           </p>
         </div>
-        
+
         <div class="decor decor-1"></div>
         <div class="decor decor-2"></div>
       </aside>
@@ -22,31 +22,40 @@
         <form @submit.prevent="handleLogin" class="auth-form">
           <div class="input-group">
             <label for="email">E-mail corporativo</label>
-            <input 
-              id="email" 
-              v-model="form.email" 
-              type="email" 
-              placeholder="exemplo@empresa.com.br" 
-              required 
+            <input
+              id="email"
+              v-model="form.email"
+              type="email"
+              placeholder="exemplo@empresa.com.br"
+              required
+              :disabled="isLoading"
             />
           </div>
 
           <div class="input-group">
             <label for="password">Senha</label>
-            <input 
-              id="password" 
-              v-model="form.password" 
-              type="password" 
-              placeholder="••••••••" 
-              required 
+            <input
+              id="password"
+              v-model="form.password"
+              type="password"
+              placeholder="••••••••"
+              required
+              :disabled="isLoading"
             />
           </div>
 
+          <p v-if="errorMessage" class="error-message">
+            {{ errorMessage }}
+          </p>
+
           <div class="form-actions">
-            <button type="submit" class="btn-primary">Entrar no sistema</button>
-            <button 
-              type="button" 
-              class="btn-secondary" 
+            <button type="submit" class="btn-primary" :disabled="isLoading">
+              {{ isLoading ? 'Entrando...' : 'Entrar no sistema' }}
+            </button>
+            <button
+              type="button"
+              class="btn-secondary"
+              :disabled="isLoading"
               @click="$router.push('/solicitar-acesso')"
             >
               Nova empresa? Solicitar acesso
@@ -61,7 +70,8 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { api } from '../services/api' // Ajuste o caminho se a sua pasta for diferente
+import { api } from '../services/api'
+import { extractPermissionNames } from '../utils/permissions'
 
 const router = useRouter()
 
@@ -73,59 +83,168 @@ const form = reactive({
 const isLoading = ref(false)
 const errorMessage = ref('')
 
+const clearAuthStorage = () => {
+  const authKeys = [
+    'access_token',
+    'refresh_token',
+    'empresa_id',
+    'nome_usuario',
+    'tipo_perfil',
+    'perfil_id',
+    'permissoes',
+    'usuario',
+    'session_active'
+  ]
+
+  authKeys.forEach((key) => localStorage.removeItem(key))
+}
+
+const getUserPayload = (data) => data?.usuario || data?.user || data?.usuario_data || {}
+
+const getPerfilPayload = (usuario) => usuario?.perfil || usuario?.grupo || {}
+
+const getPermissionIds = (data, usuario, perfil) => {
+  const ids = new Set()
+  const sources = [
+    data?.permissoes,
+    data?.permissions,
+    usuario?.permissoes,
+    usuario?.permissions,
+    perfil?.permissoes,
+    perfil?.permissions,
+    ...(usuario?.grupos || []).map((grupo) => grupo?.permissoes)
+  ]
+
+  sources.forEach((source) => {
+    if (!Array.isArray(source)) return
+
+    source.forEach((item) => {
+      const rawId =
+        typeof item === 'number'
+          ? item
+          : typeof item === 'string' && /^\d+$/.test(item)
+            ? Number(item)
+            : item?.id
+
+      if (Number.isInteger(rawId) && rawId > 0) {
+        ids.add(rawId)
+      }
+    })
+  })
+
+  return Array.from(ids)
+}
+
+const resolvePermissionNames = async (permissionIds) => {
+  if (!permissionIds.length) return []
+
+  try {
+    const permissoesResponse = await api.getAll('permissoes')
+    const permissionNames = permissoesResponse
+      .filter((item) => permissionIds.includes(item?.id))
+      .map((item) => item?.nome_permissao)
+      .filter(Boolean)
+
+    return Array.from(new Set(permissionNames))
+  } catch (error) {
+    console.warn('Nao foi possivel resolver os nomes das permissoes:', error)
+    return []
+  }
+}
+
+const decodeJwtPayload = (token) => {
+  try {
+    const payload = token?.split('.')?.[1]
+    if (!payload) return {}
+
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
+    const decoded = atob(padded)
+
+    return JSON.parse(decoded)
+  } catch {
+    return {}
+  }
+}
+
+const getEmpresaId = (data, usuario, perfil, tokenPayload) =>
+  usuario?.empresa?.id ||
+  usuario?.empresa_id ||
+  usuario?.empresa ||
+  perfil?.empresa?.id ||
+  perfil?.empresa_id ||
+  data?.empresa?.id ||
+  data?.empresa_id ||
+  data?.empresa ||
+  tokenPayload?.empresa_id ||
+  tokenPayload?.empresa?.id ||
+  tokenPayload?.empresa
+
 const handleLogin = async () => {
   isLoading.value = true
   errorMessage.value = ''
 
   try {
-    // 1. Faz a chamada para a API
     const data = await api.login(form.email, form.password)
-    
-    // 2. Salva o token de acesso (se sua API retornar um token). 
-    // Ajuste 'data.token' para o nome exato do campo que o Django devolve (ex: data.access)
-    if (data.token) {
-      localStorage.setItem('access_token', data.token)
+
+    const accessToken = data?.access || data?.access_token || data?.token
+    const refreshToken = data?.refresh || data?.refresh_token
+    const usuario = getUserPayload(data)
+    const perfil = getPerfilPayload(usuario)
+    const permissionIds = getPermissionIds(data, usuario, perfil)
+
+    if (!accessToken) {
+      throw new Error('A resposta do login não trouxe o token JWT de acesso.')
     }
 
-    const nomeUsuario = data?.usuario?.nome_usuario
-    const empresaId = data?.usuario?.empresa?.id
-    const perfilId = data?.usuario?.perfil?.id
-    const tipoPerfil = data?.usuario?.perfil?.tipo_perfil
+    clearAuthStorage()
+    localStorage.setItem('access_token', accessToken)
+
+    const tokenPayload = decodeJwtPayload(accessToken)
+    const permissionNamesFromPayload = extractPermissionNames([
+      data,
+      usuario,
+      perfil,
+      tokenPayload
+    ])
+    const permissionNamesFromIds = await resolvePermissionNames(permissionIds)
+    const permissoes = Array.from(new Set([...permissionNamesFromPayload, ...permissionNamesFromIds]))
+
+    if (refreshToken) {
+      localStorage.setItem('refresh_token', refreshToken)
+    }
+
+    const nomeUsuario = usuario?.nome_usuario || usuario?.nome || usuario?.username
+    const empresaId = getEmpresaId(data, usuario, perfil, tokenPayload)
+    const perfilId = perfil?.id || usuario?.perfil_id || usuario?.grupo_id
+    const tipoPerfil =
+      perfil?.tipo_perfil || perfil?.nome || usuario?.tipo_perfil || usuario?.grupo_nome
 
     if (empresaId) {
       localStorage.setItem('empresa_id', String(empresaId))
-    } else {
-      localStorage.removeItem('empresa_id')
     }
 
     if (nomeUsuario) {
       localStorage.setItem('nome_usuario', nomeUsuario)
-    } else {
-      localStorage.removeItem('nome_usuario')
     }
 
     if (tipoPerfil) {
       localStorage.setItem('tipo_perfil', tipoPerfil)
-    } else {
-      localStorage.removeItem('tipo_perfil')
     }
 
     if (perfilId) {
       localStorage.setItem('perfil_id', String(perfilId))
-    } else {
-      localStorage.removeItem('perfil_id')
     }
 
+    localStorage.setItem('permissoes', JSON.stringify(permissoes))
+    localStorage.setItem('usuario', JSON.stringify(usuario))
     localStorage.setItem('session_active', 'true')
 
-    // 3. Redireciona o usuário para a tela inicial do Dashboard
-    // Pode direcionar direto para equipamentos, por exemplo:
     router.push('/dashboard')
-    
   } catch (error) {
-    console.error('Falha no login:', error.message)
-    errorMessage.value = error.message
-    alert(errorMessage.value) // Exibe o erro para o usuário
+    clearAuthStorage()
+    console.error('Falha no login:', error)
+    errorMessage.value = error?.message || 'Não foi possível entrar no sistema.'
   } finally {
     isLoading.value = false
   }
@@ -133,18 +252,16 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
-/* Container de fundo */
 .page-container {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  background: #f1f5f9; /* Fundo cinza bem claro para destacar o cartão */
+  background: #f1f5f9;
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-/* O Cartão Centralizado */
 .auth-card {
   display: flex;
   width: 100%;
@@ -155,7 +272,6 @@ const handleLogin = async () => {
   overflow: hidden;
 }
 
-/* --- PAINEL ESQUERDO (AZUL) --- */
 .brand-panel {
   flex: 1;
   background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
@@ -179,7 +295,7 @@ const handleLogin = async () => {
   font-weight: 800;
   letter-spacing: -0.05em;
   margin-bottom: 1rem;
-  text-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .brand-tagline {
@@ -190,7 +306,6 @@ const handleLogin = async () => {
   margin: 0 auto;
 }
 
-/* Decorações do fundo azul */
 .decor {
   position: absolute;
   border-radius: 50%;
@@ -212,7 +327,6 @@ const handleLogin = async () => {
   right: -50px;
 }
 
-/* --- PAINEL DIREITO (BRANCO/FORMULÁRIO) --- */
 .form-panel {
   flex: 1.2;
   padding: 3.5rem;
@@ -271,6 +385,13 @@ const handleLogin = async () => {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
+.error-message {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .form-actions {
   margin-top: 1rem;
   display: flex;
@@ -312,19 +433,24 @@ const handleLogin = async () => {
   color: #1e293b;
 }
 
-/* Responsividade */
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.input-group input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 @media (max-width: 768px) {
   .auth-card {
     flex-direction: column;
   }
+
   .brand-panel {
     padding: 3rem 2rem;
   }
+
   .form-panel {
     padding: 2.5rem;
   }
 }
 </style>
-
-
-
