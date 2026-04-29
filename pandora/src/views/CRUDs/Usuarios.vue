@@ -3,21 +3,21 @@
     <section class="page-header">
       <div>
         <p class="eyebrow">Acessos</p>
-        <h2>Gestao de Usuarios</h2>
-        <p class="page-copy">Cadastre usuarios da empresa logada, vincule setor e escolha os grupos de acesso.</p>
+        <h2>Gestão de Usuários</h2>
+        <p class="page-copy">Cadastre usuários da empresa logada, vincule setor e escolha os grupos de acesso.</p>
       </div>
     </section>
 
     <section v-if="canCreate || canEdit || canToggleActive || canAssignGroups" class="card form-card">
       <div class="card-header">
-        <h3>{{ isEditing ? 'Editar usuario' : 'Novo usuario' }}</h3>
-        <p>Preencha os dados principais e marque os grupos que esse usuario pode usar.</p>
+        <h3>{{ isEditing ? 'Editar usuário' : 'Novo usuário' }}</h3>
+        <p>Preencha os dados principais e marque os grupos que esse usuário pode usar.</p>
       </div>
 
       <form @submit.prevent="saveUsuario" class="crud-form">
         <div class="input-row">
           <div class="input-group">
-            <label>Nome do Usuario</label>
+            <label>Nome do Usuário</label>
             <input
               v-model="form.nome_usuario"
               type="text"
@@ -64,8 +64,8 @@
 
         <div class="status-card">
           <div>
-            <strong>Status do usuario</strong>
-            <p>Ative ou desative o acesso deste usuario ao sistema.</p>
+            <strong>Status do usuário</strong>
+            <p>Ative ou desative o acesso deste usuário ao sistema.</p>
           </div>
           <label class="toggle-line" :class="{ disabled: !canManageStatus }">
             <input v-model="form.ativo" type="checkbox" :disabled="!canManageStatus" />
@@ -77,7 +77,7 @@
           <div class="groups-panel-header">
             <div>
               <h4>Grupos de acesso</h4>
-              <p>Selecione os grupos da empresa que este usuario pode utilizar.</p>
+              <p>Selecione os grupos da empresa que este usuário pode utilizar.</p>
             </div>
             <div class="groups-toolbar">
               <button type="button" class="btn btn-row" @click="selectAllGroups" :disabled="!canManageGroups">
@@ -119,8 +119,8 @@
 
     <section v-if="canView" class="card table-card">
       <div class="card-header">
-        <h3>Usuarios cadastrados</h3>
-        <p>{{ usuarios.length }} registro(s) vinculados a empresa logada.</p>
+        <h3>Usuários cadastrados</h3>
+        <p>{{ usuarios.length }} registro(s) vinculados à empresa logada.</p>
       </div>
 
       <div class="table-wrap">
@@ -133,12 +133,12 @@
               <th>Setor</th>
               <th>Grupos</th>
               <th>Status</th>
-              <th>Acoes</th>
+              <th class="col-acoes">Ações</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="!usuarios.length">
-              <td colspan="7" class="empty-state">Nenhum usuario encontrado para esta empresa.</td>
+              <td colspan="7" class="empty-state">Nenhum usuário encontrado para esta empresa.</td>
             </tr>
             <tr v-for="usuario in usuarios" :key="usuario.id">
               <td>{{ usuario.id }}</td>
@@ -151,11 +151,21 @@
                   {{ usuario.ativo ? 'Ativo' : 'Inativo' }}
                 </span>
               </td>
-              <td>
+              <td class="col-acoes">
                 <div class="action-buttons">
-                  <button v-if="canEdit || canAssignGroups || canToggleActive" @click="editUsuario(usuario)" class="btn btn-row">Editar</button>
-                  <button v-if="canDelete" @click="deleteUsuario(usuario)" class="btn btn-danger">Excluir</button>
-                  <span v-if="!canEdit && !canAssignGroups && !canToggleActive && !canDelete" class="empty-actions">Sem acoes disponiveis</span>
+                  <button
+                    v-if="canEdit || canAssignGroups || canToggleActive"
+                    @click="editUsuario(usuario)"
+                    class="btn-icon"
+                    title="Editar"
+                  >✏️</button>
+                  <button
+                    v-if="canDelete"
+                    @click="deleteUsuario(usuario)"
+                    class="btn-icon"
+                    title="Excluir"
+                  >🗑️</button>
+                  <span v-if="!canEdit && !canAssignGroups && !canToggleActive && !canDelete" class="empty-actions">—</span>
                 </div>
               </td>
             </tr>
@@ -166,8 +176,8 @@
 
     <section v-if="!canView && !canCreate && !canEdit && !canDelete && !canToggleActive && !canAssignGroups" class="card empty-card">
       <div class="card-header">
-        <h3>Acesso indisponivel</h3>
-        <p>Este CRUD aparecera quando alguma permissao relacionada a usuarios estiver liberada.</p>
+        <h3>Acesso indisponível</h3>
+        <p>Este CRUD aparecerá quando alguma permissão relacionada a usuários estiver liberada.</p>
       </div>
     </section>
   </div>
@@ -221,7 +231,7 @@ const fetchData = async () => {
     usuarios.value = []
     setores.value = []
     gruposDisponiveis.value = []
-    alert('Empresa do usuario nao identificada. Faca login novamente.')
+    alert('Empresa do usuário não identificada. Faça login novamente.')
     return
   }
 
@@ -241,26 +251,26 @@ const fetchData = async () => {
     gruposDisponiveis.value = Array.isArray(gruposResponse) ? gruposResponse.filter(pertenceAEmpresaLogada) : []
   } catch (error) {
     console.error(error)
-    alert(error?.message || 'Erro ao carregar os dados de usuarios.')
+    alert(error?.message || 'Erro ao carregar os dados de usuários.')
   }
 }
 
 const getSetorLabel = (setorId) => {
   const normalizedId = Number(setorId?.id ?? setorId)
-  return setores.value.find((setor) => setor.id === normalizedId)?.nome_setor || 'Nao informado'
+  return setores.value.find((setor) => setor.id === normalizedId)?.nome_setor || 'Não informado'
 }
 
 const formatGroupCount = (groups) => `${getNormalizedGroupIds(groups).length} grupo(s)`
-const formatPermissionCount = (permissionsList) => `${Array.isArray(permissionsList) ? permissionsList.length : 0} permissao(oes)`
+const formatPermissionCount = (permissionsList) => `${Array.isArray(permissionsList) ? permissionsList.length : 0} permissão(ões)`
 
 const saveUsuario = async () => {
   if (!isEmpresaValida) {
-    alert('Empresa do usuario nao identificada. Faca login novamente.')
+    alert('Empresa do usuário não identificada. Faça login novamente.')
     return
   }
 
   if (!canCreate.value && !isEditing.value) {
-    alert('Voce nao possui permissao para criar usuarios.')
+    alert('Você não possui permissão para criar usuários.')
     return
   }
 
@@ -271,14 +281,14 @@ const saveUsuario = async () => {
     const passwordInformada = Boolean(form.value.password)
 
     if (nomeMudou || emailMudou || setorMudou || passwordInformada) {
-      alert('Voce nao possui permissao para editar os dados principais do usuario.')
+      alert('Você não possui permissão para editar os dados principais do usuário.')
       return
     }
   }
 
   const statusMudou = Boolean(form.value.ativo) !== Boolean(originalUsuarioSnapshot.value?.ativo)
   if (!canToggleActive.value && isEditing.value && statusMudou) {
-    alert('Voce nao possui permissao para ativar ou desativar usuarios.')
+    alert('Você não possui permissão para ativar ou desativar usuários.')
     return
   }
 
@@ -287,7 +297,7 @@ const saveUsuario = async () => {
     JSON.stringify([...(originalUsuarioSnapshot.value?.grupos || [])].sort((a, b) => a - b))
 
   if (!canAssignGroups.value && isEditing.value && gruposMudaram) {
-    alert('Voce nao possui permissao para atribuir grupos a usuarios.')
+    alert('Você não possui permissão para atribuir grupos a usuários.')
     return
   }
 
@@ -315,18 +325,18 @@ const saveUsuario = async () => {
     await fetchData()
   } catch (error) {
     console.error(error)
-    alert(error?.message || 'Erro ao salvar usuario.')
+    alert(error?.message || 'Erro ao salvar usuário.')
   }
 }
 
 const editUsuario = (usuario) => {
   if (!canEdit.value && !canAssignGroups.value && !canToggleActive.value) {
-    alert('Voce nao possui permissao para editar usuarios.')
+    alert('Você não possui permissão para editar usuários.')
     return
   }
 
   if (!pertenceAEmpresaLogada(usuario)) {
-    alert('Voce so pode editar usuarios da sua empresa.')
+    alert('Você só pode editar usuários da sua empresa.')
     return
   }
 
@@ -355,16 +365,16 @@ const editUsuario = (usuario) => {
 
 const deleteUsuario = async (usuario) => {
   if (!canDelete.value) {
-    alert('Voce nao possui permissao para excluir usuarios.')
+    alert('Você não possui permissão para excluir usuários.')
     return
   }
 
   if (!pertenceAEmpresaLogada(usuario)) {
-    alert('Voce so pode excluir usuarios da sua empresa.')
+    alert('Você só pode excluir usuários da sua empresa.')
     return
   }
 
-  if (confirm(`Excluir o usuario "${usuario.nome_usuario}"?`)) {
+  if (confirm(`Excluir o usuário "${usuario.nome_usuario}"?`)) {
     await api.delete('usuarios', usuario.id)
     await fetchData()
   }
@@ -392,49 +402,106 @@ onMounted(fetchData)
 
 <style scoped>
 .crud-page { display: flex; flex-direction: column; gap: 1.5rem; }
-.page-header { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #bfdbfe; border-radius: 20px; padding: 1.5rem 1.75rem; }
+
+.page-header {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #bfdbfe;
+  border-radius: 20px;
+  padding: 1.5rem 1.75rem;
+}
 .eyebrow { margin: 0 0 0.35rem; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #2563eb; }
-.page-header h2, .card-header h3, .groups-panel-header h4 { margin: 0; color: #0f172a; }
-.page-copy, .card-header p, .groups-panel-header p { margin: 0.4rem 0 0; color: #475569; }
+.page-header h2 { margin: 0; color: #0f172a; font-size: 1.5rem; font-weight: 700; }
+.page-copy { margin: 0.4rem 0 0; color: #475569; font-size: 0.95rem; }
+
 .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06); }
 .form-card, .table-card, .empty-card { padding: 1.5rem; }
 .card-header { margin-bottom: 1.25rem; }
+.card-header h3 { margin: 0; color: #0f172a; }
+.card-header p { margin: 0.4rem 0 0; color: #475569; }
+
 .crud-form { display: flex; flex-direction: column; gap: 1rem; }
 .input-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 .input-group { display: flex; flex-direction: column; gap: 0.45rem; }
 .input-group label { font-size: 0.9rem; font-weight: 600; color: #334155; }
-.input-group input, .input-group select { box-sizing: border-box; width: 100%; padding: 0.9rem 1rem; border: 1px solid #cbd5e1; border-radius: 12px; background: #f8fafc; color: #0f172a; transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s; }
-.input-group input:focus, .input-group select:focus { outline: none; background: #ffffff; border-color: #2563eb; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14); }
-.status-card { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.1rem; border: 1px solid #dbeafe; border-radius: 16px; background: #f8fbff; }
+.input-group input,
+.input-group select {
+  box-sizing: border-box; width: 100%;
+  padding: 0.9rem 1rem; border: 1px solid #cbd5e1;
+  border-radius: 12px; background: #f8fafc;
+  color: #0f172a; font-size: 0.95rem;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+.input-group input:focus,
+.input-group select:focus {
+  outline: none; background: #ffffff;
+  border-color: #2563eb; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
+}
+
+.status-card {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; padding: 1rem 1.1rem;
+  border: 1px solid #dbeafe; border-radius: 16px; background: #f8fbff;
+}
 .status-card strong { color: #0f172a; }
 .status-card p { margin: 0.35rem 0 0; color: #64748b; }
 .toggle-line { display: inline-flex; align-items: center; gap: 0.65rem; color: #1e293b; }
 .toggle-line.disabled { opacity: 0.65; }
+
 .groups-panel { border: 1px solid #dbeafe; border-radius: 18px; padding: 1rem; background: #f8fbff; }
 .groups-panel-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.groups-panel-header h4 { margin: 0; color: #0f172a; }
+.groups-panel-header p { margin: 0.4rem 0 0; color: #475569; }
 .groups-toolbar { display: flex; gap: 0.75rem; flex-wrap: wrap; }
 .groups-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-.group-option { display: flex; align-items: flex-start; gap: 0.75rem; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff; color: #1e293b; }
+.group-option {
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  padding: 1rem; border: 1px solid #e2e8f0;
+  border-radius: 16px; background: #ffffff; color: #1e293b;
+}
 .group-option strong { display: block; }
 .group-option span { display: block; margin-top: 0.2rem; font-size: 0.85rem; color: #64748b; }
 .group-option.disabled { opacity: 0.65; }
+
 .form-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-.btn { border: none; border-radius: 12px; padding: 0.8rem 1.15rem; font-weight: 600; cursor: pointer; transition: transform 0.15s, box-shadow 0.2s, background-color 0.2s; }
+
+.btn { border: none; border-radius: 12px; padding: 0.8rem 1.15rem; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: transform 0.15s, box-shadow 0.2s, background-color 0.2s; }
 .btn:hover { transform: translateY(-1px); }
 .btn-primary { background: #2563eb; color: #ffffff; box-shadow: 0 10px 24px rgba(37, 99, 235, 0.24); }
 .btn-secondary, .btn-row { background: #e2e8f0; color: #1e293b; }
-.btn-danger { background: #fee2e2; color: #b91c1c; }
-.table-wrap { overflow-x: auto; }
-.data-table { width: 100%; border-collapse: collapse; }
-.data-table th, .data-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
-.data-table th { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; }
+
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.data-table { width: 100%; border-collapse: collapse; min-width: 600px; }
+.data-table th, .data-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+.data-table th { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; white-space: nowrap; }
 .data-table td { color: #1e293b; }
-.status-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.35rem 0.75rem; font-size: 0.85rem; font-weight: 700; }
+
+.col-acoes { text-align: left !important; }
+.action-buttons { display: inline-flex; gap: 0.5rem; align-items: center; }
+
+.btn-icon {
+  background: none; border: none; cursor: pointer;
+  font-size: 1.1rem; padding: 0.3rem;
+  filter: grayscale(1); opacity: 0.7;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: filter 0.2s, opacity 0.2s, transform 0.2s;
+}
+.btn-icon:hover { filter: none; opacity: 1; transform: scale(1.2); }
+
+.status-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.35rem 0.75rem; font-size: 0.75rem; font-weight: 700; }
 .status-active { background: #dcfce7; color: #166534; }
 .status-inactive { background: #e2e8f0; color: #475569; }
-.action-buttons { display: flex; gap: 0.6rem; flex-wrap: wrap; }
-.empty-actions { color: #64748b; font-size: 0.9rem; }
+
+.empty-actions { color: #94a3b8; font-size: 0.85rem; }
 .empty-state { text-align: center; color: #64748b; padding: 1.5rem 1rem; }
+
 @media (max-width: 900px) { .groups-grid { grid-template-columns: 1fr; } }
-@media (max-width: 768px) { .page-header, .form-card, .table-card, .empty-card { padding: 1.2rem; } .input-row { grid-template-columns: 1fr; } .status-card, .groups-panel-header, .action-buttons, .form-actions { flex-direction: column; } .btn { width: 100%; } }
+@media (max-width: 768px) {
+  .page-header, .form-card, .table-card, .empty-card { padding: 1.2rem; border-radius: 16px; }
+  .card { border-radius: 16px; }
+  .input-row { grid-template-columns: 1fr; }
+  .status-card, .groups-panel-header { flex-direction: column; }
+  .form-actions { flex-direction: column; }
+  .form-actions .btn { width: 100%; }
+  .data-table th, .data-table td { padding: 0.75rem 0.85rem; font-size: 0.875rem; }
+}
 </style>

@@ -89,18 +89,19 @@ const clearAuthStorage = () => {
     'refresh_token',
     'empresa_id',
     'nome_usuario',
+    'user_name',
     'tipo_perfil',
+    'user_profile',
     'perfil_id',
     'permissoes',
     'usuario',
-    'session_active'
+    'session_active',
+    'user_id'
   ]
-
   authKeys.forEach((key) => localStorage.removeItem(key))
 }
 
 const getUserPayload = (data) => data?.usuario || data?.user || data?.usuario_data || {}
-
 const getPerfilPayload = (usuario) => usuario?.perfil || usuario?.grupo || {}
 
 const getPermissionIds = (data, usuario, perfil) => {
@@ -114,38 +115,24 @@ const getPermissionIds = (data, usuario, perfil) => {
     perfil?.permissions,
     ...(usuario?.grupos || []).map((grupo) => grupo?.permissoes)
   ]
-
   sources.forEach((source) => {
     if (!Array.isArray(source)) return
-
     source.forEach((item) => {
-      const rawId =
-        typeof item === 'number'
-          ? item
-          : typeof item === 'string' && /^\d+$/.test(item)
-            ? Number(item)
-            : item?.id
-
-      if (Number.isInteger(rawId) && rawId > 0) {
-        ids.add(rawId)
-      }
+      const rawId = typeof item === 'number' ? item : (typeof item === 'string' && /^\d+$/.test(item) ? Number(item) : item?.id)
+      if (Number.isInteger(rawId) && rawId > 0) ids.add(rawId)
     })
   })
-
   return Array.from(ids)
 }
 
 const resolvePermissionNames = async (permissionIds) => {
   if (!permissionIds.length) return []
-
   try {
     const permissoesResponse = await api.getAll('permissoes')
-    const permissionNames = permissoesResponse
+    return permissoesResponse
       .filter((item) => permissionIds.includes(item?.id))
       .map((item) => item?.nome_permissao)
       .filter(Boolean)
-
-    return Array.from(new Set(permissionNames))
   } catch (error) {
     console.warn('Nao foi possivel resolver os nomes das permissoes:', error)
     return []
@@ -156,95 +143,49 @@ const decodeJwtPayload = (token) => {
   try {
     const payload = token?.split('.')?.[1]
     if (!payload) return {}
-
-    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
-    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
-    const decoded = atob(padded)
-
+    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
     return JSON.parse(decoded)
-  } catch {
-    return {}
-  }
+  } catch { return {} }
 }
-
-const getEmpresaId = (data, usuario, perfil, tokenPayload) =>
-  usuario?.empresa?.id ||
-  usuario?.empresa_id ||
-  usuario?.empresa ||
-  perfil?.empresa?.id ||
-  perfil?.empresa_id ||
-  data?.empresa?.id ||
-  data?.empresa_id ||
-  data?.empresa ||
-  tokenPayload?.empresa_id ||
-  tokenPayload?.empresa?.id ||
-  tokenPayload?.empresa
 
 const handleLogin = async () => {
   isLoading.value = true
   errorMessage.value = ''
-
   try {
     const data = await api.login(form.email, form.password)
-
     const accessToken = data?.access || data?.access_token || data?.token
-    const refreshToken = data?.refresh || data?.refresh_token
     const usuario = getUserPayload(data)
     const perfil = getPerfilPayload(usuario)
-    const permissionIds = getPermissionIds(data, usuario, perfil)
-
-    if (!accessToken) {
-      throw new Error('A resposta do login não trouxe o token JWT de acesso.')
-    }
+    
+    if (!accessToken) throw new Error('Falha na autenticação.')
 
     clearAuthStorage()
     localStorage.setItem('access_token', accessToken)
+    
+    const userId = usuario?.id || data?.user_id || decodeJwtPayload(accessToken)?.user_id
+    if (userId) {
+      localStorage.setItem('user_id', String(userId))
+    }
 
-    const tokenPayload = decodeJwtPayload(accessToken)
-    const permissionNamesFromPayload = extractPermissionNames([
-      data,
-      usuario,
-      perfil,
-      tokenPayload
-    ])
+
+    // Normalização dos dados para o Dashboard
+    const nome = usuario?.nome_usuario || usuario?.nome || usuario?.username || data?.user_nome || form.email.split('@')[0]
+    const tipo = perfil?.tipo_perfil || perfil?.nome || usuario?.tipo_perfil || usuario?.grupo_nome || 'Colaborador'
+    const empresaId = usuario?.empresa?.id || data?.empresa_id || decodeJwtPayload(accessToken)?.empresa_id
+
+    localStorage.setItem('nome_usuario', nome)
+    localStorage.setItem('tipo_perfil', tipo)
+    if (empresaId) localStorage.setItem('empresa_id', String(empresaId))
+    
+    // Processamento de permissões
+    const permissionIds = getPermissionIds(data, usuario, perfil)
     const permissionNamesFromIds = await resolvePermissionNames(permissionIds)
-    const permissoes = Array.from(new Set([...permissionNamesFromPayload, ...permissionNamesFromIds]))
-
-    if (refreshToken) {
-      localStorage.setItem('refresh_token', refreshToken)
-    }
-
-    const nomeUsuario = usuario?.nome_usuario || usuario?.nome || usuario?.username
-    const empresaId = getEmpresaId(data, usuario, perfil, tokenPayload)
-    const perfilId = perfil?.id || usuario?.perfil_id || usuario?.grupo_id
-    const tipoPerfil =
-      perfil?.tipo_perfil || perfil?.nome || usuario?.tipo_perfil || usuario?.grupo_nome
-
-    if (empresaId) {
-      localStorage.setItem('empresa_id', String(empresaId))
-    }
-
-    if (nomeUsuario) {
-      localStorage.setItem('nome_usuario', nomeUsuario)
-    }
-
-    if (tipoPerfil) {
-      localStorage.setItem('tipo_perfil', tipoPerfil)
-    }
-
-    if (perfilId) {
-      localStorage.setItem('perfil_id', String(perfilId))
-    }
-
-    localStorage.setItem('permissoes', JSON.stringify(permissoes))
-    localStorage.setItem('usuario', JSON.stringify(usuario))
+    localStorage.setItem('permissoes', JSON.stringify(permissionNamesFromIds))
     localStorage.setItem('session_active', 'true')
 
     router.push('/dashboard')
   } catch (error) {
-    clearAuthStorage()
-    console.error('Falha no login:', error)
-    errorMessage.value = error?.message || 'Não foi possível entrar no sistema.'
+    errorMessage.value = error?.message || 'Erro ao entrar.'
   } finally {
     isLoading.value = false
   }
@@ -454,3 +395,6 @@ const handleLogin = async () => {
   }
 }
 </style>
+
+
+

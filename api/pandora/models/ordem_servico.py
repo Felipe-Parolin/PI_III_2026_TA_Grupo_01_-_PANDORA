@@ -7,8 +7,13 @@ class OrdemServico(models.Model):
     urgencia = models.CharField(max_length=100)
     status = models.CharField(max_length=100)
     descricao_problema = models.TextField()
+    
+    # ADICIONE ESTA LINHA ABAIXO:
+    foto_problema = models.ImageField(upload_to='os/problemas/', null=True, blank=True)
+    
     usuario_abertura = models.ForeignKey(Usuario, on_delete=models.RESTRICT, related_name='os_abertas')
-    equipamento = models.ForeignKey(Equipamento, on_delete=models.RESTRICT, related_name='ordens_servico')
+    equipamento = models.ForeignKey(Equipamento, on_delete=models.CASCADE, related_name='ordens_servico')
+    
     usuario_tecnico = models.ForeignKey(Usuario, on_delete=models.RESTRICT, related_name='os_atendidas', null=True, blank=True)
     data_fechamento = models.DateTimeField(null=True, blank=True)
     descricao_solucao = models.TextField(null=True, blank=True)

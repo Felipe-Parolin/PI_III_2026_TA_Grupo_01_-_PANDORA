@@ -6,6 +6,10 @@ import DashboardLayout from '../views/Dashboard.vue'
 import Grupos from '../views/CRUDs/Grupos.vue'
 import Setores from '../views/CRUDs/Setores.vue'
 import Usuarios from '../views/CRUDs/Usuarios.vue'
+import AnaliseIA from '../views/AnaliseIA.vue'
+import OperadorAbrirChamado from '../views/OperadorAbrirChamado.vue'
+import Equipamentos from '../views/Equipamentos.vue'
+import GestaoOrdensServico from '../views/GestaoOrdensServico.vue' // Importação correta
 import { getStoredPermissions, hasCrudPermission } from '../utils/permissions'
 
 const getDashboardHome = () => {
@@ -13,7 +17,7 @@ const getDashboardHome = () => {
   if (hasCrudPermission('grupos', permissions)) return '/dashboard/grupos'
   if (hasCrudPermission('usuarios', permissions)) return '/dashboard/usuarios'
   if (hasCrudPermission('setores', permissions)) return '/dashboard/setores'
-  return '/dashboard'
+  return '/dashboard/abrir-os'
 }
 
 const routes = [
@@ -25,8 +29,14 @@ const routes = [
     meta: { requiresAuth: true },
     children: [
       { path: 'grupos', component: Grupos, meta: { title: 'Grupos', permissionPrefix: 'grupos' } },
-      { path: 'usuarios', component: Usuarios, meta: { title: 'Usuarios', permissionPrefix: 'usuarios' } },
-      { path: 'setores', component: Setores, meta: { title: 'Setores', permissionPrefix: 'setores' } }
+      { path: 'usuarios', component: Usuarios, meta: { title: 'Usuários', permissionPrefix: 'usuarios' } },
+      { path: 'setores', component: Setores, meta: { title: 'Setores', permissionPrefix: 'setores' } },
+      { path: 'analise', component: AnaliseIA, meta: { title: 'Análise PANDORA' } },
+      { path: 'abrir-os', component: OperadorAbrirChamado, meta: { title: 'Abrir Chamado' } },
+      { path: 'equipamentos', component: Equipamentos, meta: { title: 'Equipamentos', permissionPrefix: 'setores' } }, // Adicionei a vírgula aqui
+      
+      // AJUSTE AQUI: Removi a barra inicial do path para ser relativo ao /dashboard
+      { path: 'gestao-os', name: 'GestaoOS', component: GestaoOrdensServico, meta: { title: 'Gestão de OS' } }
     ]
   }
 ]
@@ -42,21 +52,11 @@ router.beforeEach((to) => {
   const isAuthenticated = Boolean(token || sessionActive)
   const dashboardHome = getDashboardHome()
 
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    return '/'
-  }
-
-  if (to.meta.guestOnly && isAuthenticated) {
-    return dashboardHome
-  }
-
-  if (to.path === '/dashboard' && dashboardHome !== '/dashboard') {
-    return dashboardHome
-  }
-
-  if (to.meta.permissionPrefix && !hasCrudPermission(to.meta.permissionPrefix)) {
-    return dashboardHome
-  }
+  if (to.meta.requiresAuth && !isAuthenticated) return '/'
+  if (to.meta.guestOnly && isAuthenticated) return dashboardHome
+  if (to.path === '/dashboard' && dashboardHome !== '/dashboard') return dashboardHome
+  
+  if (to.meta.permissionPrefix && !hasCrudPermission(to.meta.permissionPrefix)) return dashboardHome
 
   return true
 })
