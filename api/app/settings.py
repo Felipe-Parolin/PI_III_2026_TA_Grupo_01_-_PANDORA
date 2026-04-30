@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Indica o caminho exato do ficheiro
-env_path = os.path.join(BASE_DIR, 'pandora', 'pandora.env')
+env_path = os.path.join(BASE_DIR, 'pandora', '.env')
 load_dotenv(dotenv_path=env_path)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
