@@ -11,3 +11,4 @@ from .anexo_os import AnexoOSViewSet
 from .analise_llm import AnaliseLLMViewSet
 from .historico_os import HistoricoOSViewSet
 from .login import LoginView
+from .auth import CustomTokenObtainPairView
