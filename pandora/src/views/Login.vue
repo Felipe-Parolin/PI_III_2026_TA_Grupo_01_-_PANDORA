@@ -71,7 +71,6 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '../services/api'
-import { extractPermissionNames } from '../utils/permissions'
 
 const router = useRouter()
 
@@ -83,107 +82,42 @@ const form = reactive({
 const isLoading = ref(false)
 const errorMessage = ref('')
 
-const clearAuthStorage = () => {
-  const authKeys = [
-    'access_token',
-    'refresh_token',
-    'empresa_id',
-    'nome_usuario',
-    'user_name',
-    'tipo_perfil',
-    'user_profile',
-    'perfil_id',
-    'permissoes',
-    'usuario',
-    'session_active',
-    'user_id'
-  ]
-  authKeys.forEach((key) => localStorage.removeItem(key))
-}
-
-const getUserPayload = (data) => data?.usuario || data?.user || data?.usuario_data || {}
-const getPerfilPayload = (usuario) => usuario?.perfil || usuario?.grupo || {}
-
-const getPermissionIds = (data, usuario, perfil) => {
-  const ids = new Set()
-  const sources = [
-    data?.permissoes,
-    data?.permissions,
-    usuario?.permissoes,
-    usuario?.permissions,
-    perfil?.permissoes,
-    perfil?.permissions,
-    ...(usuario?.grupos || []).map((grupo) => grupo?.permissoes)
-  ]
-  sources.forEach((source) => {
-    if (!Array.isArray(source)) return
-    source.forEach((item) => {
-      const rawId = typeof item === 'number' ? item : (typeof item === 'string' && /^\d+$/.test(item) ? Number(item) : item?.id)
-      if (Number.isInteger(rawId) && rawId > 0) ids.add(rawId)
-    })
-  })
-  return Array.from(ids)
-}
-
-const resolvePermissionNames = async (permissionIds) => {
-  if (!permissionIds.length) return []
-  try {
-    const permissoesResponse = await api.getAll('permissoes')
-    return permissoesResponse
-      .filter((item) => permissionIds.includes(item?.id))
-      .map((item) => item?.nome_permissao)
-      .filter(Boolean)
-  } catch (error) {
-    console.warn('Nao foi possivel resolver os nomes das permissoes:', error)
-    return []
-  }
-}
-
-const decodeJwtPayload = (token) => {
-  try {
-    const payload = token?.split('.')?.[1]
-    if (!payload) return {}
-    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
-    return JSON.parse(decoded)
-  } catch { return {} }
-}
-
 const handleLogin = async () => {
   isLoading.value = true
   errorMessage.value = ''
+  
   try {
     const data = await api.login(form.email, form.password)
-    const accessToken = data?.access || data?.access_token || data?.token
-    const usuario = getUserPayload(data)
-    const perfil = getPerfilPayload(usuario)
     
-    if (!accessToken) throw new Error('Falha na autenticação.')
-
-    clearAuthStorage()
-    localStorage.setItem('access_token', accessToken)
+    const accessToken = data.access
+    const refreshToken = data.refresh
     
-    const userId = usuario?.id || data?.user_id || decodeJwtPayload(accessToken)?.user_id
-    if (userId) {
-      localStorage.setItem('user_id', String(userId))
+    if (!accessToken) {
+      throw new Error('Falha na autenticação.')
     }
 
-
-    // Normalização dos dados para o Dashboard
-    const nome = usuario?.nome_usuario || usuario?.nome || usuario?.username || data?.user_nome || form.email.split('@')[0]
-    const tipo = perfil?.tipo_perfil || perfil?.nome || usuario?.tipo_perfil || usuario?.grupo_nome || 'Colaborador'
-    const empresaId = usuario?.empresa?.id || data?.empresa_id || decodeJwtPayload(accessToken)?.empresa_id
-
-    localStorage.setItem('nome_usuario', nome)
-    localStorage.setItem('tipo_perfil', tipo)
-    if (empresaId) localStorage.setItem('empresa_id', String(empresaId))
+    localStorage.clear()
     
-    // Processamento de permissões
-    const permissionIds = getPermissionIds(data, usuario, perfil)
-    const permissionNamesFromIds = await resolvePermissionNames(permissionIds)
-    localStorage.setItem('permissoes', JSON.stringify(permissionNamesFromIds))
+    localStorage.setItem('access_token', accessToken)
+    localStorage.setItem('refresh_token', refreshToken)
+    
+    if (data.usuario) {
+      localStorage.setItem('user_id', String(data.usuario.id))
+      localStorage.setItem('nome_usuario', data.usuario.nome_usuario)
+      if (data.usuario.empresa_id) {
+        localStorage.setItem('empresa_id', String(data.usuario.empresa_id))
+      }
+    }
+
+    if (data.permissoes && Array.isArray(data.permissoes)) {
+      localStorage.setItem('permissoes', JSON.stringify(data.permissoes))
+    }
+
+    localStorage.setItem('tipo_perfil', 'Colaborador')
     localStorage.setItem('session_active', 'true')
 
     router.push('/dashboard')
+    
   } catch (error) {
     errorMessage.value = error?.message || 'Erro ao entrar.'
   } finally {
@@ -395,6 +329,3 @@ const handleLogin = async () => {
   }
 }
 </style>
-
-
-
