@@ -86,7 +86,7 @@ Abra esse endereço no seu navegador para usar o sistema.
 
 | E-mail | Senha |
 |--------|-------|
-| felipeparolin10@gmail.com | felipe |
+| felipeparolin10@gmail.com | felipe10 |
 | gabrieldacunha51@gmail.com | gabriel |
 
 ---
