@@ -1,9 +1,9 @@
 <template>
   <div class="crud-page">
     <section class="page-header animate-fade-in">
-      <p class="eyebrow">Diagnóstico Inteligente</p>
-      <h2>Análise Preditiva via IA</h2>
-      <p class="page-copy">Utilize inteligência artificial para gerar pareceres técnicos baseados nos sintomas, histórico de falhas e manuais dos equipamentos.</p>
+      <p class="eyebrow">Diagnóstico Técnico</p>
+      <h2>Análise Preditiva</h2>
+      <p class="page-copy">Gere pareceres técnicos baseados nos sintomas, histórico de falhas e manuais dos equipamentos.</p>
     </section>
 
     <section class="card form-card animate-fade-in">
@@ -34,7 +34,7 @@
               <option value="Crítica">Crítica</option>
             </select>
           </div>
-          <button @click="limparFiltros" class="btn-clear-filters">✕ Limpar</button>
+          <button @click="limparFiltros" class="btn-clear-filters">Limpar</button>
         </div>
 
         <!-- ── SELECT DE OS (filtrado) ──────────────────────────────── -->
@@ -51,12 +51,12 @@
 
           <!-- Banner de confirmação quando uma OS está vinculada -->
           <div v-if="osSelecionadaObj" class="os-selected-summary">
-            <span class="summary-icon">🔗</span>
+            <span class="summary-icon">OS</span>
             <span>OS <strong>#{{ osSelecionadaObj.id }}</strong> vinculada —
               <em>{{ osSelecionadaObj.equipamento_nome }}</em>.
-              O histórico completo deste equipamento será enviado à IA.
+              O histórico completo deste equipamento será enviado para análise.
             </span>
-            <button @click="desselecionarOS" class="btn-desvincular">✕</button>
+            <button @click="desselecionarOS" class="btn-desvincular" title="Remover vínculo">×</button>
           </div>
         </div>
 
@@ -77,13 +77,13 @@
               :title="isRecording ? 'Parar gravação' : 'Usar microfone'"
               :disabled="transcrevendo || loading"
             >
-              <span v-if="transcrevendo">⏳</span>
-              <span v-else-if="!isRecording">🎤</span>
-              <span v-else>🔴</span>
+              <span v-if="transcrevendo" class="icon-text">...</span>
+              <span v-else-if="!isRecording" class="icon-text">MIC</span>
+              <span v-else class="icon-text">REC</span>
             </button>
           </div>
-          <p v-if="isRecording" class="mic-hint recording">🎙️ Gravando... clique no botão para parar.</p>
-          <p v-else-if="transcrevendo" class="mic-hint processing">⏳ Transcrevendo áudio...</p>
+          <p v-if="isRecording" class="mic-hint recording">Gravando... clique no botão para parar.</p>
+          <p v-else-if="transcrevendo" class="mic-hint processing">Transcrevendo áudio...</p>
         </div>
 
         <div class="form-actions">
@@ -92,7 +92,7 @@
               <div class="spinner-small"></div>
               <span>Analisando...</span>
             </div>
-            <span v-else>🚀 Iniciar Diagnóstico Inteligente</span>
+            <span v-else>Gerar Parecer Técnico</span>
           </button>
         </div>
       </div>
@@ -112,7 +112,7 @@
       <div class="result-body">
         <div v-if="loading" class="loading-container">
           <div class="spinner-blue"></div>
-          <p>A IA está cruzando sintomas com o histórico do equipamento...</p>
+          <p>Processando sintomas e histórico do equipamento...</p>
         </div>
 
         <template v-else-if="resultado">
@@ -120,7 +120,7 @@
           <!-- Diagnóstico principal -->
           <div class="result-block">
             <div class="result-block-header diagnosis">
-              <span class="block-icon">🔍</span>
+              <span class="block-icon">DG</span>
               <span class="block-title">Diagnóstico Principal</span>
             </div>
             <p class="text-content">{{ resultado.diagnostico }}</p>
@@ -131,7 +131,7 @@
           <!-- Histórico relacionado -->
           <div v-if="resultado.historico_relacionado" class="result-block">
             <div class="result-block-header history">
-              <span class="block-icon">📋</span>
+              <span class="block-icon">HT</span>
               <span class="block-title">Ocorrências Anteriores Relacionadas</span>
             </div>
             <div class="history-box">
@@ -144,7 +144,7 @@
           <!-- Probabilidade de recorrência -->
           <div v-if="resultado.probabilidade_recorrencia" class="result-block">
             <div class="result-block-header recurrence">
-              <span class="block-icon">🔁</span>
+              <span class="block-icon">PR</span>
               <span class="block-title">Probabilidade de Recorrência</span>
             </div>
             <div :class="['recurrence-bar-wrapper', resultado.nivel_recorrencia?.toLowerCase()]">
@@ -157,7 +157,7 @@
           <!-- Causa raiz -->
           <div v-if="resultado.causa_raiz" class="result-block">
             <div class="result-block-header root-cause">
-              <span class="block-icon">⚠️</span>
+              <span class="block-icon">CR</span>
               <span class="block-title">Possível Causa Raiz</span>
             </div>
             <p class="text-content">{{ resultado.causa_raiz }}</p>
@@ -168,7 +168,7 @@
           <!-- Plano de ação -->
           <div class="result-block">
             <div class="result-block-header plan">
-              <span class="block-icon">🛠️</span>
+              <span class="block-icon">PA</span>
               <span class="block-title">Plano de Ação Detalhado</span>
             </div>
             <p class="text-content plan-text">{{ formatarPlano(resultado.solucao) }}</p>
@@ -177,7 +177,7 @@
           <!-- Peças/recursos sugeridos -->
           <div v-if="resultado.pecas_sugeridas" class="result-block mt-4">
             <div class="result-block-header parts">
-              <span class="block-icon">🔩</span>
+              <span class="block-icon">PC</span>
               <span class="block-title">Peças / Recursos Sugeridos</span>
             </div>
             <p class="text-content">{{ resultado.pecas_sugeridas }}</p>
@@ -186,7 +186,7 @@
           <!-- Recomendação preventiva -->
           <div v-if="resultado.recomendacao_preventiva" class="result-block mt-4">
             <div class="result-block-header preventive">
-              <span class="block-icon">🛡️</span>
+              <span class="block-icon">RP</span>
               <span class="block-title">Recomendação Preventiva</span>
             </div>
             <div class="preventive-box">
@@ -453,7 +453,20 @@ onMounted(fetchOS)
   font-size: 0.85rem;
   color: #1d4ed8;
 }
-.summary-icon { font-size: 1rem; }
+.summary-icon {
+  width: 28px;
+  height: 22px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
 .btn-desvincular { margin-left: auto; background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 0.9rem; padding: 0 4px; }
 .btn-desvincular:hover { color: #ef4444; }
 
@@ -483,6 +496,11 @@ onMounted(fetchOS)
 }
 .inner-mic-btn:hover:not(:disabled) { background: #f1f5f9; }
 .inner-mic-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.icon-text {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
 .recording-active { background: #fee2e2 !important; border-color: #ef4444 !important; animation: pulse 1.5s infinite; }
 @keyframes pulse {
   0%   { transform: scale(1);   box-shadow: 0 0 0 0    rgba(239,68,68,0.4); }
@@ -524,7 +542,20 @@ onMounted(fetchOS)
 /* Blocos de resultado */
 .result-block { padding: 0.5rem 0; }
 .result-block-header { display: flex; align-items: center; gap: 8px; margin-bottom: 0.6rem; }
-.block-icon { font-size: 1rem; }
+.block-icon {
+  width: 28px;
+  height: 22px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
 .block-title { font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; }
 
 /* Destaque por tipo de bloco */

@@ -3,7 +3,11 @@ from pandora.models import OrdemServico
 from pandora.serializers import OrdemServicoSerializer
 
 class OrdemServicoViewSet(viewsets.ModelViewSet):
-    queryset = OrdemServico.objects.all()
+    queryset = OrdemServico.objects.select_related(
+        'equipamento__setor',
+        'usuario_abertura',
+        'usuario_tecnico',
+    )
     serializer_class = OrdemServicoSerializer
 
     def perform_update(self, serializer):

@@ -1,3 +1,5 @@
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from pandora.models import Usuario
 from .empresa import EmpresaSerializer
@@ -73,3 +75,34 @@ class UsuarioLoginSerializer(serializers.ModelSerializer):
             'setor',
             'grupos',
         ]
+
+
+class TrocarSenhaSerializer(serializers.Serializer):
+    senha_atual = serializers.CharField(write_only=True, trim_whitespace=False)
+    nova_senha = serializers.CharField(write_only=True, trim_whitespace=False)
+    confirmar_senha = serializers.CharField(write_only=True, trim_whitespace=False)
+
+    def validate(self, attrs):
+        usuario = self.context['request'].user
+
+        if not usuario.check_password(attrs['senha_atual']):
+            raise serializers.ValidationError({'senha_atual': 'Senha atual incorreta.'})
+
+        if attrs['nova_senha'] != attrs['confirmar_senha']:
+            raise serializers.ValidationError({'confirmar_senha': 'As senhas nao conferem.'})
+
+        if attrs['senha_atual'] == attrs['nova_senha']:
+            raise serializers.ValidationError({'nova_senha': 'A nova senha deve ser diferente da senha atual.'})
+
+        try:
+            validate_password(attrs['nova_senha'], user=usuario)
+        except DjangoValidationError as error:
+            raise serializers.ValidationError({'nova_senha': list(error.messages)})
+
+        return attrs
+
+    def save(self, **kwargs):
+        usuario = self.context['request'].user
+        usuario.set_password(self.validated_data['nova_senha'])
+        usuario.save(update_fields=['password'])
+        return usuario

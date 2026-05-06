@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate
 from django.test import TestCase
+from rest_framework.test import APIClient
 
 from pandora.models import Empresa, Grupo, Setor, Usuario
 from pandora.serializers.usuario import UsuarioSerializer
@@ -59,3 +60,41 @@ class UsuarioSerializerTests(TestCase):
 
         self.assertTrue(usuario.check_password('nova12345'))
         self.assertIsNotNone(authenticate(username='joao@example.com', password='nova12345'))
+
+
+class TrocarSenhaTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.usuario = Usuario.objects.create_user(
+            email='ana@example.com',
+            password='antiga123',
+            nome_usuario='Ana',
+        )
+        self.url = '/api/usuarios/trocar-senha/'
+
+    def test_usuario_autenticado_troca_a_propria_senha(self):
+        self.client.force_authenticate(user=self.usuario)
+
+        response = self.client.post(self.url, {
+            'senha_atual': 'antiga123',
+            'nova_senha': 'nova12345',
+            'confirmar_senha': 'nova12345',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        self.usuario.refresh_from_db()
+        self.assertTrue(self.usuario.check_password('nova12345'))
+        self.assertFalse(self.usuario.check_password('antiga123'))
+
+    def test_nao_troca_com_senha_atual_incorreta(self):
+        self.client.force_authenticate(user=self.usuario)
+
+        response = self.client.post(self.url, {
+            'senha_atual': 'errada123',
+            'nova_senha': 'nova12345',
+            'confirmar_senha': 'nova12345',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 400)
+        self.usuario.refresh_from_db()
+        self.assertTrue(self.usuario.check_password('antiga123'))

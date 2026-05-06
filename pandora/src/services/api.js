@@ -63,6 +63,19 @@ export const api = {
     }
   },
 
+  changePassword: async (data) => {
+    try {
+      const response = await apiClient.post('/api/usuarios/trocar-senha/', data);
+      return response.data;
+    } catch (error) {
+      const responseData = error.response?.data;
+      const message = responseData?.detail || 'Não foi possível alterar a senha.';
+      const apiError = new Error(message);
+      apiError.data = responseData;
+      throw apiError;
+    }
+  },
+
   getAll: async (endpoint) => {
     const response = await apiClient.get(`/api/${endpoint}/`);
     return response.data;

@@ -27,7 +27,7 @@
     <section class="list-card">
       <div class="section-header">
         <h3>Fila de atendimento</h3>
-        <p>Utilize a inteligência artificial para obter diagnósticos prévios dos problemas relatados.</p>
+        <p>Gere uma análise técnica preliminar dos problemas relatados.</p>
       </div>
 
       <div class="ticket-list">
@@ -36,7 +36,7 @@
             <strong>CH-1024 • Prensa Hidráulica 02</strong>
             <p>Parada intermitente durante o ciclo de produção.</p>
             <button @click="solicitarAnaliseIA('Parada intermitente durante o ciclo de produção na Prensa Hidráulica 02')" class="btn-ia">
-               💡 Analisar com IA
+               Gerar análise técnica
             </button>
           </div>
           <span class="status critical">Crítico</span>
@@ -47,7 +47,7 @@
             <strong>CH-1021 • Esteira de Embalagem</strong>
             <p>Ruído incomum reportado pelo operador do turno B.</p>
             <button @click="solicitarAnaliseIA('Ruído incomum na Esteira de Embalagem reportado pelo operador')" class="btn-ia">
-               💡 Analisar com IA
+               Gerar análise técnica
             </button>
           </div>
           <span class="status warning">Médio</span>
@@ -58,7 +58,7 @@
             <strong>CH-1018 • Compressor Central</strong>
             <p>Verificação preventiva pendente após oscilação de pressão.</p>
             <button @click="solicitarAnaliseIA('Verificação preventiva no Compressor Central após oscilação de pressão')" class="btn-ia">
-               💡 Analisar com IA
+               Gerar análise técnica
             </button>
           </div>
           <span class="status normal">Planejado</span>
@@ -86,11 +86,11 @@ export default {
           alert("Erro: " + analise.error);
         } else {
           // Exibe o diagnóstico vindo do Llama
-          alert("🤖 DIAGNÓSTICO IA:\n" + analise.diagnostico + "\n\n🛠️ SUGGESTÃO DE SOLUÇÃO:\n" + analise.solucao);
+          alert("DIAGNÓSTICO TÉCNICO:\n" + analise.diagnostico + "\n\nSUGESTÃO DE SOLUÇÃO:\n" + analise.solucao);
         }
       } catch (error) {
-        console.error("Erro ao conectar com a IA:", error);
-        alert("Não foi possível conectar ao servidor de IA.");
+        console.error("Erro ao conectar com o serviço de análise:", error);
+        alert("Não foi possível conectar ao serviço de análise.");
       }
     }
   }
@@ -113,7 +113,7 @@ export default {
 .ticket-item { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid #e2e8f0; }
 .ticket-item:last-child { border-bottom: none; }
 
-/* NOVO ESTILO PARA O BOTÃO DE IA */
+/* Botão de análise técnica */
 .btn-ia {
   margin-top: 0.75rem;
   padding: 0.4rem 0.8rem;

@@ -9,6 +9,8 @@ class OrdemServicoSerializer(serializers.ModelSerializer):
     equipamento_id_interno = serializers.IntegerField(source='equipamento.id_interno', read_only=True)
     equipamento_qr_token   = serializers.CharField(source='equipamento.qr_code_token', read_only=True)
     equipamento_tipo       = serializers.CharField(source='equipamento.tipo_equipamento', read_only=True)
+    equipamento_setor_id   = serializers.IntegerField(source='equipamento.setor.id', read_only=True)
+    equipamento_setor_nome = serializers.CharField(source='equipamento.setor.nome_setor', read_only=True)
     equipamento_foto       = serializers.SerializerMethodField()
     equipamento_documentos = serializers.SerializerMethodField()
     

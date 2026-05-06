@@ -5,7 +5,7 @@ class PandoraBackend(BaseBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         try:
             usuario = Usuario.objects.get(email=username)
-            if usuario.senha_hash == password:
+            if usuario.check_password(password):
                 return usuario
         except Usuario.DoesNotExist:
             return None
