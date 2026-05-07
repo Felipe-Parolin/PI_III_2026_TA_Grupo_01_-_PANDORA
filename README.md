@@ -37,7 +37,7 @@ Antes de rodar qualquer comando, crie o arquivo `.env` dentro da pasta `api/pand
 
 ```
 VITE_API_BASE_URL=http://127.0.0.1:8000/api
-API_KEY=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
+GROQ_API_KEY=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
 ```
 
 ---
@@ -86,7 +86,7 @@ Abra esse endereço no seu navegador para usar o sistema.
 
 | E-mail | Senha |
 |--------|-------|
-| felipeparolin10@gmail.com | felipe |
+| felipeparolin10@gmail.com | felipe10 |
 | gabrieldacunha51@gmail.com | gabriel |
 
 ---

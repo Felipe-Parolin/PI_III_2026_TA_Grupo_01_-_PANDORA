@@ -2,7 +2,7 @@ from .empresa import EmpresaSerializer
 from .setor import SetorSerializer
 from .permissao import PermissaoSerializer
 from .grupo import GrupoSerializer
-from .usuario import UsuarioSerializer
+from .usuario import TrocarSenhaSerializer, UsuarioSerializer
 from .equipamento import EquipamentoSerializer
 from .ordem_servico import OrdemServicoSerializer
 from .categoria_documento import CategoriaDocumentoSerializer

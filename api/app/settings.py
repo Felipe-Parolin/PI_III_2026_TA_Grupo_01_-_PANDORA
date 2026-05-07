@@ -8,6 +8,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env_path = os.path.join(BASE_DIR, 'pandora', '.env')
 load_dotenv(dotenv_path=env_path)
 
+GROQ_API_KEY = os.getenv('GROQ_API_KEY') or os.getenv('API_KEY')
+if GROQ_API_KEY:
+    os.environ.setdefault('GROQ_API_KEY', GROQ_API_KEY)
+
 SECRET_KEY = 'django-insecure-ra1b7x!vx*t(=nt_k&#1tquvwbi#4ldx3k_jas*jt4g6ng3yzf'
 
 DEBUG = True

@@ -6,7 +6,7 @@
       <p class="page-copy">Relate falhas enviando áudio, texto e imagens para a equipe técnica.</p>
     </section>
 
-    <section class="card form-card animate-fade-in">
+    <section v-if="canUseOpenCall" class="card form-card animate-fade-in">
       <div class="card-header">
         <h3>Detalhes da Ocorrência</h3>
         <p>Preencha os dados da falha para abrir o chamado técnico.</p>
@@ -16,12 +16,63 @@
         <div class="input-row">
           <div class="input-group">
             <label>Equipamento com Falha</label>
-            <select v-model="form.equipamento" required>
-              <option value="" disabled>Selecione o equipamento...</option>
-              <option v-for="e in equipamentos" :key="e.id" :value="e.id">
-                #{{ e.id_interno || e.id }} - {{ e.nome_equipamento }}
-              </option>
-            </select>
+            <div class="equipment-search">
+              <div class="equipment-search-box">
+                <input
+                  v-model="equipamentoBusca"
+                  type="search"
+                  placeholder="Pesquise por nome, ID interno, ID do sistema ou QR..."
+                  autocomplete="off"
+                  :disabled="carregando || !canViewEquipment"
+                  @focus="abrirBuscaEquipamento"
+                  @input="handleEquipamentoBusca"
+                  @keydown.enter.prevent="selecionarPrimeiroEquipamento"
+                  @keydown.esc="equipamentoBuscaAberta = false"
+                  @blur="fecharBuscaEquipamento"
+                />
+                <button
+                  v-if="form.equipamento"
+                  type="button"
+                  class="equipment-clear"
+                  title="Limpar equipamento selecionado"
+                  :disabled="carregando"
+                  @mousedown.prevent
+                  @click="limparEquipamentoSelecionado"
+                >
+                  &times;
+                </button>
+              </div>
+
+              <div
+                v-if="equipamentoBuscaAberta && canViewEquipment && !carregando"
+                class="equipment-results"
+              >
+                <button
+                  v-for="e in equipamentosFiltrados"
+                  :key="e.id"
+                  type="button"
+                  class="equipment-result"
+                  @mousedown.prevent="selecionarEquipamento(e)"
+                >
+                  <span class="equipment-result-title">{{ e.nome_equipamento || 'Equipamento sem nome' }}</span>
+                  <span class="equipment-result-meta">
+                    ID interno: #{{ e.id_interno || e.id }} - Sistema: {{ e.id }}
+                    <template v-if="e.qr_code_token"> - QR: {{ e.qr_code_token }}</template>
+                  </span>
+                </button>
+                <p v-if="!equipamentosFiltrados.length" class="equipment-empty">
+                  Nenhum equipamento encontrado para essa busca.
+                </p>
+              </div>
+
+              <p v-if="equipamentoSelecionado" class="equipment-selected">
+                Selecionado: <strong>#{{ equipamentoSelecionado.id_interno || equipamentoSelecionado.id }}</strong>
+                {{ equipamentoSelecionado.nome_equipamento }}
+              </p>
+              <p v-else class="equipment-hint">
+                Digite para pesquisar e selecione um equipamento da lista.
+              </p>
+            </div>
           </div>
 
           <div class="input-group">
@@ -43,24 +94,29 @@
               placeholder="Descreva o defeito detalhadamente..."
               class="custom-textarea"
               required
+              :disabled="carregando || isRecording || transcrevendo"
             ></textarea>
             <button
               type="button"
               @click="toggleRecording"
               :class="['inner-mic-btn', { 'recording-active': isRecording }]"
-              title="Transcrever Áudio"
+              :title="isRecording ? 'Parar gravação' : 'Gravar por voz'"
+              :disabled="carregando || transcrevendo"
             >
-              <span v-if="!isRecording">🎤</span>
-              <span v-else>🛑</span>
+              <span v-if="transcrevendo" class="icon-text">...</span>
+              <span v-else-if="!isRecording" class="icon-text">MIC</span>
+              <span v-else class="icon-text">REC</span>
             </button>
           </div>
+          <p v-if="isRecording" class="mic-hint recording">Gravando... clique no botão para parar.</p>
+          <p v-else-if="transcrevendo" class="mic-hint processing">Transcrevendo áudio...</p>
         </div>
 
         <!-- ── Fotos do Problema ── -->
         <div class="upload-section-container">
           <div class="upload-block">
             <div class="upload-block-header">
-              <label class="small-label">📸 Fotos do Problema <span class="optional-tag">opcional</span></label>
+              <label class="small-label">Fotos do Problema <span class="optional-tag">opcional</span></label>
               <label for="fotoProblemaInput" class="btn-add-file">+ Adicionar foto</label>
               <input
                 type="file"
@@ -88,24 +144,43 @@
         </div>
 
         <div class="form-actions">
-          <button type="submit" :disabled="carregando" class="btn btn-primary">
-            <span v-if="!carregando">🚀 Abrir Chamado</span>
+          <button type="submit" :disabled="carregando || isRecording || transcrevendo || !canUseOpenCall" class="btn btn-primary">
+            <span v-if="!carregando">Abrir Chamado</span>
             <span v-else>Enviando...</span>
           </button>
         </div>
       </form>
     </section>
+
+    <section v-else class="card empty-card animate-fade-in">
+      <div class="card-header">
+        <h3>Acesso limitado</h3>
+        <p>Para abrir chamados, libere ordens_servico.criar e equipamentos.visualizar.</p>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import axios from 'axios'
+import { useRoute } from 'vue-router'
+import { getStoredPermissions, hasPermission } from '../utils/permissions'
 
+const route = useRoute()
 const carregando = ref(false)
 const equipamentos = ref([])
+const equipamentoBusca = ref('')
+const equipamentoBuscaAberta = ref(false)
 const isRecording = ref(false)
+const transcrevendo = ref(false)
 const fotosProblema = ref([]) // [{ file, nome, preview }]
+let mediaRecorder = null
+let audioChunks = []
+const permissions = computed(() => getStoredPermissions())
+const canCreateOS = computed(() => hasPermission('ordens_servico.criar', permissions.value))
+const canViewEquipment = computed(() => hasPermission('equipamentos.visualizar', permissions.value))
+const canUseOpenCall = computed(() => canCreateOS.value && canViewEquipment.value)
 
 const form = ref({
   equipamento: '',
@@ -114,32 +189,166 @@ const form = ref({
   status: 'Aberto'
 })
 
-// ── WebSpeech API ─────────────────────────────────────────────────────────────
-let recognition = null
-if (window.webkitSpeechRecognition || window.SpeechRecognition) {
-  const SpeechConstructor = window.webkitSpeechRecognition || window.SpeechRecognition
-  recognition = new SpeechConstructor()
-  recognition.lang = 'pt-BR'
-  recognition.continuous = true
-  recognition.interimResults = true
+const normalizarBusca = (valor) => String(valor ?? '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .trim()
 
-  recognition.onresult = (event) => {
-    let transcript = ''
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      transcript += event.results[i][0].transcript
-    }
-    form.value.descricao_problema = transcript
-  }
+const getEquipamentoLabel = (equipamento) => {
+  if (!equipamento) return ''
+  return `#${equipamento.id_interno || equipamento.id} - ${equipamento.nome_equipamento || 'Equipamento sem nome'}`
 }
 
-const toggleRecording = () => {
-  if (!recognition) return alert('Navegador incompatível com áudio.')
-  if (isRecording.value) {
-    recognition.stop()
-    isRecording.value = false
+const equipamentoSelecionado = computed(() =>
+  equipamentos.value.find((item) => String(item.id) === String(form.value.equipamento)) || null
+)
+
+const equipamentosFiltrados = computed(() => {
+  const termo = normalizarBusca(equipamentoBusca.value)
+  const lista = !termo
+    ? equipamentos.value
+    : equipamentos.value.filter((equipamento) => {
+      const camposBusca = [
+        equipamento.id,
+        equipamento.id_interno,
+        equipamento.nome_equipamento,
+        equipamento.tipo_equipamento,
+        equipamento.qr_code_token,
+        equipamento.status
+      ]
+
+      return camposBusca.some((campo) => normalizarBusca(campo).includes(termo))
+    })
+
+  return lista.slice(0, 10)
+})
+
+const abrirBuscaEquipamento = () => {
+  if (carregando.value || !canViewEquipment.value) return
+  equipamentoBuscaAberta.value = true
+}
+
+const fecharBuscaEquipamento = () => {
+  window.setTimeout(() => {
+    equipamentoBuscaAberta.value = false
+  }, 120)
+}
+
+const handleEquipamentoBusca = () => {
+  form.value.equipamento = ''
+  equipamentoBuscaAberta.value = true
+}
+
+const selecionarEquipamento = (equipamento) => {
+  form.value.equipamento = equipamento.id
+  equipamentoBusca.value = getEquipamentoLabel(equipamento)
+  equipamentoBuscaAberta.value = false
+}
+
+const selecionarPrimeiroEquipamento = () => {
+  const [primeiroEquipamento] = equipamentosFiltrados.value
+  if (primeiroEquipamento) selecionarEquipamento(primeiroEquipamento)
+}
+
+const limparEquipamentoSelecionado = ({ manterAberta = true } = {}) => {
+  form.value.equipamento = ''
+  equipamentoBusca.value = ''
+  equipamentoBuscaAberta.value = manterAberta
+}
+
+// ── Áudio / transcrição ──────────────────────────────────────────────────────
+const getAudioMimeType = () => {
+  if (!window.MediaRecorder) return ''
+  if (MediaRecorder.isTypeSupported('audio/webm')) return 'audio/webm'
+  if (MediaRecorder.isTypeSupported('audio/ogg')) return 'audio/ogg'
+  return ''
+}
+
+const getAudioExtension = (mimeType) => {
+  if (mimeType.includes('webm')) return 'webm'
+  if (mimeType.includes('ogg')) return 'ogg'
+  if (mimeType.includes('mp4')) return 'mp4'
+  return 'wav'
+}
+
+const aplicarTranscricao = (transcricao) => {
+  const texto = String(transcricao || '').trim()
+  if (!texto) return
+
+  const descricaoAtual = form.value.descricao_problema.trim()
+  form.value.descricao_problema = descricaoAtual
+    ? `${descricaoAtual}\n${texto}`
+    : texto
+}
+
+const enviarAudioParaTranscricao = async (audioBlob, filename) => {
+  const formData = new FormData()
+  formData.append('audio', audioBlob, filename)
+
+  const res = await axios.post(
+    'http://localhost:8000/api/analises-llm/transcrever/',
+    formData,
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('access_token')}`
+      }
+    }
+  )
+
+  aplicarTranscricao(res.data.transcricao)
+}
+
+const toggleRecording = async () => {
+  if (!window.MediaRecorder || !navigator.mediaDevices?.getUserMedia) {
+    alert('Gravação de áudio não disponível neste navegador.')
+    return
+  }
+
+  if (!isRecording.value) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mimeType = getAudioMimeType()
+      mediaRecorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream)
+      audioChunks = []
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data?.size) audioChunks.push(event.data)
+      }
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(track => track.stop())
+
+        const blobType = mediaRecorder.mimeType || mimeType || 'audio/webm'
+        const audioBlob = new Blob(audioChunks, { type: blobType })
+        const extension = getAudioExtension(blobType)
+
+        transcrevendo.value = true
+        try {
+          await enviarAudioParaTranscricao(audioBlob, `chamado.${extension}`)
+        } catch (err) {
+          console.error('Erro ao transcrever áudio:', err.response?.data || err)
+          const detalhe = err.response?.data?.error || 'Erro ao transcrever o áudio.'
+          alert(`Erro ao transcrever o áudio: ${detalhe}`)
+        } finally {
+          transcrevendo.value = false
+          audioChunks = []
+        }
+      }
+
+      mediaRecorder.start()
+      isRecording.value = true
+    } catch (err) {
+      console.error('Erro ao acessar microfone:', err)
+      alert('Microfone não disponível ou permissão negada.')
+    }
   } else {
-    recognition.start()
-    isRecording.value = true
+    if (mediaRecorder?.state === 'recording') {
+      mediaRecorder.stop()
+    }
+    isRecording.value = false
   }
 }
 
@@ -167,16 +376,45 @@ const getHeaders = () => ({
 
 // ── Fetch ─────────────────────────────────────────────────────────────────────
 const fetchEquipamentos = async () => {
+  if (!canViewEquipment.value) {
+    equipamentos.value = []
+    return
+  }
   try {
     const res = await axios.get('http://localhost:8000/api/equipamentos/', getHeaders())
     equipamentos.value = res.data
+    preselecionarEquipamentoPorQuery()
   } catch (e) {
     console.error('Erro ao buscar equipamentos:', e.response?.status)
   }
 }
 
+const preselecionarEquipamentoPorQuery = () => {
+  const equipamentoId = route.query.equipamento
+  const idInterno = route.query.id_interno
+  const token = route.query.token
+
+  const equipamento = equipamentos.value.find((item) => (
+    (equipamentoId && String(item.id) === String(equipamentoId)) ||
+    (idInterno && String(item.id_interno) === String(idInterno)) ||
+    (token && String(item.qr_code_token) === String(token))
+  ))
+
+  if (equipamento) {
+    selecionarEquipamento(equipamento)
+  }
+}
+
 // ── Salvar chamado + fotos ────────────────────────────────────────────────────
 const salvarChamado = async () => {
+  if (!canCreateOS.value) {
+    alert('Voce nao possui permissao para abrir chamados.')
+    return
+  }
+  if (!canViewEquipment.value) {
+    alert('Voce precisa da permissao equipamentos.visualizar para selecionar o equipamento.')
+    return
+  }
   const usuarioId = localStorage.getItem('user_id') ? parseInt(localStorage.getItem('user_id')) : null
   if (!usuarioId) return alert('Sessão expirada. Faça login novamente.')
   if (!form.value.equipamento) return alert('Selecione um equipamento.')
@@ -214,7 +452,7 @@ const salvarChamado = async () => {
 
     // 3. Limpa o formulário
     form.value.descricao_problema = ''
-    form.value.equipamento = ''
+    limparEquipamentoSelecionado({ manterAberta: false })
     fotosProblema.value.forEach(f => URL.revokeObjectURL(f.preview))
     fotosProblema.value = []
 
@@ -244,7 +482,7 @@ onMounted(fetchEquipamentos)
 .page-copy { margin: 0.4rem 0 0; color: #475569; font-size: 0.95rem; }
 
 .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06); }
-.form-card { padding: 1.5rem; }
+.form-card, .empty-card { padding: 1.5rem; }
 .card-header { margin-bottom: 1.25rem; }
 .card-header h3 { margin: 0; color: #0f172a; }
 .card-header p { margin: 0.4rem 0 0; color: #475569; }
@@ -270,6 +508,115 @@ onMounted(fetchEquipamentos)
   outline: none; background: #ffffff;
   border-color: #2563eb; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
 }
+.input-group textarea:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.equipment-search {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.equipment-search-box {
+  position: relative;
+}
+.equipment-search-box input {
+  padding-right: 2.8rem;
+}
+.equipment-clear {
+  position: absolute;
+  top: 50%;
+  right: 0.7rem;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+}
+.equipment-clear:hover:not(:disabled) {
+  color: #0f172a;
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+.equipment-clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.equipment-results {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  right: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 0.35rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.14);
+}
+.equipment-result {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  padding: 0.75rem 0.85rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #0f172a;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.equipment-result:hover,
+.equipment-result:focus {
+  outline: none;
+  background: #eff6ff;
+}
+.equipment-result-title {
+  width: 100%;
+  font-size: 0.92rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.equipment-result-meta {
+  width: 100%;
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.equipment-empty,
+.equipment-hint,
+.equipment-selected {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+.equipment-empty {
+  padding: 0.75rem 0.85rem;
+  color: #64748b;
+}
+.equipment-hint {
+  color: #64748b;
+}
+.equipment-selected {
+  color: #166534;
+}
+.equipment-selected strong {
+  color: #14532d;
+}
 
 /* ── Textarea + mic ───────────────────────────────── */
 .textarea-container { position: relative; width: 100%; }
@@ -283,7 +630,16 @@ onMounted(fetchEquipamentos)
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   transition: background 0.2s, border-color 0.2s;
 }
+.inner-mic-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .recording-active { background: #fee2e2; border-color: #ef4444; }
+.icon-text {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+.mic-hint { font-size: 0.78rem; font-weight: 600; margin: 5px 0 0; }
+.mic-hint.recording { color: #ef4444; }
+.mic-hint.processing { color: #2563eb; }
 
 /* ── Upload ───────────────────────────────────────── */
 .upload-section-container {

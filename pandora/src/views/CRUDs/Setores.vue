@@ -51,8 +51,8 @@
               <td>{{ setor.nome_setor }}</td>
               <td class="col-acoes">
                 <div class="action-buttons">
-                  <button v-if="canEdit" @click="editSetor(setor)" class="btn-icon" title="Editar">✏️</button>
-                  <button v-if="canDelete" @click="deleteSetor(setor.id)" class="btn-icon" title="Excluir">🗑️</button>
+                  <button v-if="canEdit" @click="editSetor(setor)" class="btn-icon" title="Editar">Editar</button>
+                  <button v-if="canDelete" @click="deleteSetor(setor.id)" class="btn-icon danger" title="Excluir">Excluir</button>
                   <span v-if="!canEdit && !canDelete" class="empty-actions">—</span>
                 </div>
               </td>
@@ -240,13 +240,13 @@ onMounted(fetchData)
 .action-buttons { display: inline-flex; gap: 0.5rem; align-items: center; }
 
 .btn-icon {
-  background: none; border: none; cursor: pointer;
-  font-size: 1.1rem; padding: 0.3rem;
-  filter: grayscale(1); opacity: 0.7;
+  background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;
+  color: #475569; font-size: 0.75rem; font-weight: 700; padding: 0.38rem 0.65rem;
   display: inline-flex; align-items: center; justify-content: center;
-  transition: filter 0.2s, opacity 0.2s, transform 0.2s;
+  transition: border-color 0.2s, color 0.2s, background 0.2s, transform 0.2s;
 }
-.btn-icon:hover { filter: none; opacity: 1; transform: scale(1.2); }
+.btn-icon:hover { border-color: #2563eb; color: #1d4ed8; background: #eff6ff; transform: translateY(-1px); }
+.btn-icon.danger:hover { border-color: #fecaca; color: #b91c1c; background: #fef2f2; }
 
 .empty-actions { color: #94a3b8; font-size: 0.85rem; }
 .empty-state { text-align: center; color: #64748b; padding: 1.5rem 1rem; }

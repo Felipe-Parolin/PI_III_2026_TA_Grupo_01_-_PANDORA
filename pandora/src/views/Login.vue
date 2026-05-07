@@ -69,10 +69,11 @@
 
 <script setup>
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { api } from '../services/api'
 
 const router = useRouter()
+const route = useRoute()
 
 const form = reactive({
   email: '',
@@ -116,7 +117,11 @@ const handleLogin = async () => {
     localStorage.setItem('tipo_perfil', 'Colaborador')
     localStorage.setItem('session_active', 'true')
 
-    router.push('/dashboard')
+    const redirectPath = typeof route.query.redirect === 'string'
+      ? route.query.redirect
+      : '/dashboard'
+
+    router.push(redirectPath)
     
   } catch (error) {
     errorMessage.value = error?.message || 'Erro ao entrar.'

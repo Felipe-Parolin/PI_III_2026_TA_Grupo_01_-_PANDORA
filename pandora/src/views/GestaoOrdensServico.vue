@@ -4,19 +4,67 @@
       <div class="card-padding">
         <p class="p-eyebrow">PAINEL DE MANUTENÇÃO</p>
         <h2 class="p-title">Ordens de Serviço</h2>
-        <p class="p-subtitle">Gerencie as intervenções e alimente a base de conhecimento da IA.</p>
+        <p class="p-subtitle">Gerencie as intervenções e mantenha o histórico técnico atualizado.</p>
       </div>
     </header>
 
     <!-- PAINEL DE FILTROS -->
-    <section class="filters-panel mb-4">
-      <div class="filter-group">
-        <label class="p-field-label">ID / Equipamento</label>
-        <input v-model="filtros.busca" type="text" placeholder="Ex: 10 ou Motor..." class="filter-input">
+    <section v-if="canViewOS" class="filters-panel mb-4">
+      <div class="filter-group equipment-filter-group">
+        <label class="p-field-label">Equipamento</label>
+        <div class="equipment-search">
+          <div class="equipment-search-box">
+            <input
+              v-model="filtros.equipamentoBusca"
+              type="search"
+              placeholder="Pesquise por nome, ID interno ou ID do sistema..."
+              class="filter-input"
+              autocomplete="off"
+              @focus="abrirBuscaEquipamento"
+              @input="handleEquipamentoBusca"
+              @keydown.enter.prevent="selecionarPrimeiroEquipamento"
+              @keydown.esc="equipamentoBuscaAberta = false"
+              @blur="fecharBuscaEquipamento"
+            >
+            <button
+              v-if="filtros.equipamentoId"
+              type="button"
+              class="equipment-clear"
+              title="Limpar equipamento selecionado"
+              @mousedown.prevent
+              @click="limparEquipamentoSelecionado"
+            >
+              &times;
+            </button>
+          </div>
+
+          <div v-if="equipamentoBuscaAberta" class="equipment-results">
+            <button
+              v-for="equipamento in equipamentosFiltrados"
+              :key="equipamento.id"
+              type="button"
+              class="equipment-result"
+              @mousedown.prevent="selecionarEquipamento(equipamento)"
+            >
+              <span class="equipment-result-title">{{ equipamento.nome || 'Equipamento sem nome' }}</span>
+              <span class="equipment-result-meta">
+                ID interno: #{{ equipamento.idInterno || equipamento.id }} - Setor: {{ equipamento.setorNome || 'N/A' }}
+              </span>
+            </button>
+            <p v-if="!equipamentosFiltrados.length" class="equipment-empty">
+              Nenhum equipamento encontrado.
+            </p>
+          </div>
+        </div>
       </div>
       <div class="filter-group">
-        <label class="p-field-label">Token QR Code</label>
-        <input v-model="filtros.token" type="text" placeholder="Token do patrimônio" class="filter-input">
+        <label class="p-field-label">Setor</label>
+        <select v-model="filtros.setor" class="filter-input">
+          <option value="">Todos</option>
+          <option v-for="setor in setoresDisponiveis" :key="setor.id" :value="setor.id">
+            {{ setor.nome }}
+          </option>
+        </select>
       </div>
       <div class="filter-group">
         <label class="p-field-label">Criticidade</label>
@@ -28,10 +76,10 @@
           <option value="Crítica">Crítica</option>
         </select>
       </div>
-      <button @click="limparFiltros" class="btn-clear-filters">✕ Limpar</button>
+      <button @click="limparFiltros" class="btn-clear-filters">Limpar</button>
     </section>
 
-    <div class="p-main-container">
+    <div v-if="canViewOS" class="p-main-container">
       <div class="p-tabs-container mb-4">
         <button @click="tabAtiva = 'abertas'" :class="['p-tab-btn', { active: tabAtiva === 'abertas' }]">
           Abertas <span class="p-badge">{{ filtrarPorStatus('Aberto').length }}</span>
@@ -57,7 +105,7 @@
             <h3 class="equip-name">{{ os.equipamento_nome || 'Equipamento' }}</h3>
             <div class="equip-meta-row">
               <span class="equip-code">ID: {{ os.equipamento_id_interno ?? 'N/A' }}</span>
-              <span class="equip-token">QR: {{ os.equipamento_qr_token || 'N/A' }}</span>
+              <span class="equip-token">Setor: {{ os.equipamento_setor_nome || 'N/A' }}</span>
             </div>
 
             <div class="info-row mt-3">
@@ -71,8 +119,8 @@
           </div>
 
           <div class="os-card-footer">
-            <button v-if="os.status === 'Aberto'" @click="assumirOS(os.id)" class="btn-p-sm primary">Assumir OS</button>
-            <button v-if="os.status === 'Em Andamento'" @click="abrirModalFinalizar(os)" class="btn-p-sm success">Finalizar</button>
+            <button v-if="os.status === 'Aberto' && canAssumeOS" @click="assumirOS(os.id)" class="btn-p-sm primary">Assumir OS</button>
+            <button v-if="os.status === 'Em Andamento' && canCloseOS" @click="abrirModalFinalizar(os)" class="btn-p-sm success">Finalizar</button>
             <button @click="verDetalhes(os)" class="btn-p-sm outline">Ver Detalhes</button>
           </div>
         </div>
@@ -82,6 +130,11 @@
         Nenhum chamado encontrado com esses filtros.
       </div>
     </div>
+
+    <section v-else class="p-main-container empty-access">
+      <h3>Acesso limitado</h3>
+      <p>Libere ordens_servico.visualizar para consultar a gestao de ordens de servico.</p>
+    </section>
 
     <!-- ======================== MODAL DETALHES ======================== -->
     <Teleport to="body">
@@ -115,8 +168,8 @@
                     <span class="equip-info-value mono">{{ osSelecionada?.equipamento_id_interno ?? 'N/A' }}</span>
                   </div>
                   <div class="equip-info-item">
-                    <span class="equip-info-label">Token QR</span>
-                    <span class="equip-info-value mono">{{ osSelecionada?.equipamento_qr_token || 'N/A' }}</span>
+                    <span class="equip-info-label">Setor</span>
+                    <span class="equip-info-value">{{ osSelecionada?.equipamento_setor_nome || 'N/A' }}</span>
                   </div>
                   <div class="equip-info-item">
                     <span class="equip-info-label">Tipo</span>
@@ -133,19 +186,80 @@
                 </div>
               </div>
 
+              <div class="detail-section mt-4 ai-solution-panel">
+                <div class="ai-solution-header">
+                  <div>
+                    <p class="p-section-label ai-label">Sugestao da IA</p>
+                    <span class="ai-helper">Considera a descricao da OS e ordens anteriores do mesmo equipamento.</span>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn-ai-suggest"
+                    :disabled="analiseIA.loading || !osSelecionada"
+                    @click="gerarSugestaoIA"
+                  >
+                    {{ analiseIA.loading ? 'Analisando...' : sugestaoIAAtual ? 'Gerar novamente' : 'Sugerir solucao' }}
+                  </button>
+                </div>
+
+                <div v-if="analiseIA.loading && analiseIA.osId === osSelecionada?.id" class="ai-loading-box">
+                  Consultando historico tecnico e montando uma possivel solucao...
+                </div>
+
+                <div v-else-if="analiseIA.erro && analiseIA.osId === osSelecionada?.id" class="ai-error-box">
+                  {{ analiseIA.erro }}
+                </div>
+
+                <div v-else-if="sugestaoIAAtual" class="ai-result-box">
+                  <div v-if="sugestaoIAAtual.diagnostico" class="ai-result-section">
+                    <span class="ai-result-label">Diagnostico provavel</span>
+                    <p>{{ sugestaoIAAtual.diagnostico }}</p>
+                  </div>
+                  <div v-if="sugestaoIAAtual.solucao" class="ai-result-section">
+                    <span class="ai-result-label">Possivel solucao</span>
+                    <p class="ai-solution-text">{{ sugestaoIAAtual.solucao }}</p>
+                  </div>
+                  <div v-if="sugestaoIAAtual.historico_relacionado" class="ai-result-section muted">
+                    <span class="ai-result-label">Historico considerado</span>
+                    <p>{{ sugestaoIAAtual.historico_relacionado }}</p>
+                  </div>
+                  <div v-if="sugestaoIAAtual.alertas" class="ai-result-section warning">
+                    <span class="ai-result-label">Cuidados</span>
+                    <p>{{ sugestaoIAAtual.alertas }}</p>
+                  </div>
+                  <div class="ai-result-footer">
+                    <span>{{ sugestaoIAAtual.historico_considerado || 0 }} OS relacionada(s) analisada(s)</span>
+                    <button
+                      v-if="osSelecionada?.status === 'Em Andamento' && canCloseOS && sugestaoIAAtual.solucao"
+                      type="button"
+                      class="btn-use-ai"
+                      @click="usarSugestaoNaFinalizacao"
+                    >
+                      Usar na finalizacao
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <!-- ===== SEÇÃO: FOTOS DO PROBLEMA ===== -->
-              <div class="detail-section mt-4">
-                <p class="p-section-label problem-label">📷 Fotos do Problema</p>
+              <div v-if="canViewDocuments" class="detail-section mt-4">
+                <p class="p-section-label problem-label">Fotos do Problema</p>
                 <div class="attachments-container">
                   <template v-if="fotosDoProblema.length">
                     <template v-for="doc in fotosDoProblema" :key="doc.id">
-                      <a :href="doc.caminho_arquivo" target="_blank" class="attachment-link">
-                        <span class="file-icon">🖼️</span>
+                      <component
+                        :is="canDownloadDocuments ? 'a' : 'div'"
+                        :href="canDownloadDocuments ? doc.caminho_arquivo : null"
+                        :target="canDownloadDocuments ? '_blank' : null"
+                        class="attachment-link"
+                        :class="{ 'attachment-disabled': !canDownloadDocuments }"
+                      >
+                        <span class="file-icon">IMG</span>
                         <div class="file-meta">
                           <span class="file-name">{{ nomeExibicao(doc.nome_arquivo) }}</span>
-                          <span class="file-action">Visualizar imagem</span>
+                          <span class="file-action">{{ canDownloadDocuments ? 'Visualizar imagem' : 'Sem permissao para abrir' }}</span>
                         </div>
-                      </a>
+                      </component>
                       <div class="foto-preview-wrapper">
                         <img :src="doc.caminho_arquivo" :alt="doc.nome_arquivo" class="foto-preview" />
                       </div>
@@ -158,34 +272,47 @@
               </div>
 
               <!-- ===== SEÇÃO: DOCUMENTAÇÃO TÉCNICA DO EQUIPAMENTO ===== -->
-              <div class="detail-section mt-4">
-                <p class="p-section-label">📎 Documentação Técnica do Equipamento</p>
+              <div v-if="canViewDocuments" class="detail-section mt-4">
+                <p class="p-section-label">Documentação Técnica do Equipamento</p>
                 <div class="attachments-container">
                   <template v-if="docsDoEquipamento.length">
                     <template v-for="doc in docsDoEquipamento" :key="doc.id">
 
                       <!-- É uma imagem -->
                       <template v-if="docIsImagem(doc)">
-                        <a :href="doc.caminho_arquivo" target="_blank" class="attachment-link">
-                          <span class="file-icon">🖼️</span>
+                        <component
+                          :is="canDownloadDocuments ? 'a' : 'div'"
+                          :href="canDownloadDocuments ? doc.caminho_arquivo : null"
+                          :target="canDownloadDocuments ? '_blank' : null"
+                          class="attachment-link"
+                          :class="{ 'attachment-disabled': !canDownloadDocuments }"
+                        >
+                          <span class="file-icon">IMG</span>
                           <div class="file-meta">
                             <span class="file-name">{{ doc.nome_arquivo }}</span>
-                            <span class="file-action">Visualizar imagem</span>
+                            <span class="file-action">{{ canDownloadDocuments ? 'Visualizar imagem' : 'Sem permissao para abrir' }}</span>
                           </div>
-                        </a>
+                        </component>
                         <div class="foto-preview-wrapper">
                           <img :src="doc.caminho_arquivo" :alt="doc.nome_arquivo" class="foto-preview" />
                         </div>
                       </template>
 
                       <!-- É um PDF ou outro documento -->
-                      <a v-else :href="doc.caminho_arquivo" target="_blank" class="attachment-link">
-                        <span class="file-icon">📄</span>
+                      <component
+                        v-else
+                        :is="canDownloadDocuments ? 'a' : 'div'"
+                        :href="canDownloadDocuments ? doc.caminho_arquivo : null"
+                        :target="canDownloadDocuments ? '_blank' : null"
+                        class="attachment-link"
+                        :class="{ 'attachment-disabled': !canDownloadDocuments }"
+                      >
+                        <span class="file-icon">DOC</span>
                         <div class="file-meta">
                           <span class="file-name">{{ doc.nome_arquivo }}</span>
-                          <span class="file-action">Abrir documento</span>
+                          <span class="file-action">{{ canDownloadDocuments ? 'Abrir documento' : 'Sem permissao para abrir' }}</span>
                         </div>
-                      </a>
+                      </component>
 
                     </template>
                   </template>
@@ -198,14 +325,14 @@
               <!-- Solução (se concluída) -->
               <div v-if="osSelecionada?.descricao_solucao" class="detail-section mt-4">
                 <p class="p-section-label success-label">
-                  ✅ Solução — Técnico: {{ osSelecionada?.usuario_tecnico_nome || 'Não informado' }}
+                  Solução - Técnico: {{ osSelecionada?.usuario_tecnico_nome || 'Não informado' }}
                 </p>
                 <div class="p-text-box success-box">{{ osSelecionada?.descricao_solucao }}</div>
               </div>
 
               <div v-else-if="osSelecionada?.usuario_tecnico_nome" class="detail-section mt-4">
                 <p class="p-section-label warning-label">
-                  🔧 Técnico Responsável: {{ osSelecionada?.usuario_tecnico_nome }}
+                  Técnico Responsável: {{ osSelecionada?.usuario_tecnico_nome }}
                 </p>
               </div>
 
@@ -213,7 +340,7 @@
 
             <div class="modal-footer">
               <button
-                v-if="osSelecionada?.status === 'Em Andamento'"
+                v-if="osSelecionada?.status === 'Em Andamento' && canCloseOS"
                 @click="() => { modalDetalhes = false; abrirModalFinalizar(osSelecionada) }"
                 class="btn-p-confirm success"
               >
@@ -237,7 +364,7 @@
             </div>
             <div class="modal-body">
               <div class="p-info-alert">
-                <strong>💡 Dica PANDORA:</strong> Sua descrição alimenta a inteligência do sistema.
+                <strong>Observação:</strong> Sua descrição enriquece o histórico técnico do equipamento.
               </div>
               <div class="field-group mt-3">
                 <label class="p-field-label">Como foi resolvido?</label>
@@ -256,19 +383,19 @@
                     :title="isRecording ? 'Parar gravação' : 'Gravar por voz'"
                     :disabled="transcrevendo"
                   >
-                    <span v-if="transcrevendo">⏳</span>
-                    <span v-else-if="!isRecording">🎤</span>
-                    <span v-else>🔴</span>
+                    <span v-if="transcrevendo" class="icon-text">...</span>
+                    <span v-else-if="!isRecording" class="icon-text">MIC</span>
+                    <span v-else class="icon-text">REC</span>
                   </button>
                 </div>
-                <p v-if="isRecording" class="mic-hint recording">🎙️ Gravando... clique no botão para parar.</p>
-                <p v-else-if="transcrevendo" class="mic-hint processing">⏳ Transcrevendo áudio...</p>
+                <p v-if="isRecording" class="mic-hint recording">Gravando... clique no botão para parar.</p>
+                <p v-else-if="transcrevendo" class="mic-hint processing">Transcrevendo áudio...</p>
               </div>
             </div>
             <div class="modal-footer">
               <button @click="modalFinalizar = false" class="btn-p-cancel">Cancelar</button>
-              <button @click="confirmarFinalizacao" :disabled="loading || isRecording || transcrevendo" class="btn-p-confirm">
-                {{ loading ? 'Salvando...' : '💾 Concluir' }}
+              <button @click="confirmarFinalizacao" :disabled="loading || isRecording || transcrevendo || !canCloseOS" class="btn-p-confirm">
+                {{ loading ? 'Salvando...' : 'Concluir' }}
               </button>
             </div>
           </div>
@@ -281,6 +408,7 @@
 <script setup>
 import { ref, onMounted, computed, reactive } from 'vue'
 import axios from 'axios'
+import { getStoredPermissions, hasPermission } from '../utils/permissions'
 
 const tabAtiva = ref('abertas')
 const ordens = ref([])
@@ -289,6 +417,20 @@ const modalDetalhes = ref(false)
 const loading = ref(false)
 const osSelecionada = ref(null)
 const finalizacao = ref({ descricao_solucao: '' })
+const analiseIA = ref({
+  loading: false,
+  erro: '',
+  resultado: null,
+  osId: null
+})
+const permissions = computed(() => getStoredPermissions())
+const canViewOS = computed(() => hasPermission('ordens_servico.visualizar', permissions.value))
+const canChangeOSStatus = computed(() => hasPermission('ordens_servico.alterar_status', permissions.value))
+const canAssignTechnician = computed(() => hasPermission('ordens_servico.atribuir_tecnico', permissions.value))
+const canAssumeOS = computed(() => canChangeOSStatus.value && canAssignTechnician.value)
+const canCloseOS = computed(() => hasPermission('ordens_servico.fechar', permissions.value))
+const canViewDocuments = computed(() => hasPermission('documentos_equipamento.visualizar', permissions.value))
+const canDownloadDocuments = computed(() => hasPermission('documentos_equipamento.baixar', permissions.value))
 
 // ── Áudio / transcrição ──────────────────────────────────────────────────────
 const isRecording = ref(false)
@@ -296,7 +438,13 @@ const transcrevendo = ref(false)
 let mediaRecorder = null
 let audioChunks = []
 
-const filtros = reactive({ busca: '', token: '', urgencia: '' })
+const equipamentoBuscaAberta = ref(false)
+const filtros = reactive({
+  equipamentoBusca: '',
+  equipamentoId: '',
+  setor: '',
+  urgencia: ''
+})
 
 const API_BASE = 'http://localhost:8000/api/ordens-servico/'
 
@@ -339,9 +487,116 @@ const docsDoEquipamento = computed(() => {
   )
 })
 
+const sugestaoIAAtual = computed(() => {
+  if (!osSelecionada.value || analiseIA.value.osId !== osSelecionada.value.id) return null
+  return analiseIA.value.resultado
+})
+
+const normalizarBusca = (valor) => String(valor ?? '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .trim()
+
+const getEquipamentoLabel = (equipamento) => {
+  if (!equipamento) return ''
+  return `#${equipamento.idInterno || equipamento.id} - ${equipamento.nome || 'Equipamento sem nome'}`
+}
+
+const equipamentosDisponiveis = computed(() => {
+  const porId = new Map()
+  ordens.value.forEach((os) => {
+    const id = os.equipamento
+    if (!id || porId.has(String(id))) return
+
+    porId.set(String(id), {
+      id,
+      nome: os.equipamento_nome,
+      idInterno: os.equipamento_id_interno,
+      tipo: os.equipamento_tipo,
+      setorId: os.equipamento_setor_id,
+      setorNome: os.equipamento_setor_nome
+    })
+  })
+
+  return Array.from(porId.values()).sort((a, b) =>
+    String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR')
+  )
+})
+
+const setoresDisponiveis = computed(() => {
+  const porId = new Map()
+  ordens.value.forEach((os) => {
+    if (!os.equipamento_setor_id || porId.has(String(os.equipamento_setor_id))) return
+    porId.set(String(os.equipamento_setor_id), {
+      id: os.equipamento_setor_id,
+      nome: os.equipamento_setor_nome || 'Setor sem nome'
+    })
+  })
+
+  return Array.from(porId.values()).sort((a, b) =>
+    String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR')
+  )
+})
+
+const equipamentosFiltrados = computed(() => {
+  const termo = normalizarBusca(filtros.equipamentoBusca)
+  const lista = !termo
+    ? equipamentosDisponiveis.value
+    : equipamentosDisponiveis.value.filter((equipamento) => {
+      const camposBusca = [
+        equipamento.id,
+        equipamento.idInterno,
+        equipamento.nome,
+        equipamento.tipo,
+        equipamento.setorNome
+      ]
+
+      return camposBusca.some((campo) => normalizarBusca(campo).includes(termo))
+    })
+
+  return lista.slice(0, 10)
+})
+
+const abrirBuscaEquipamento = () => {
+  equipamentoBuscaAberta.value = true
+}
+
+const fecharBuscaEquipamento = () => {
+  window.setTimeout(() => {
+    equipamentoBuscaAberta.value = false
+  }, 120)
+}
+
+const handleEquipamentoBusca = () => {
+  filtros.equipamentoId = ''
+  equipamentoBuscaAberta.value = true
+}
+
+const selecionarEquipamento = (equipamento) => {
+  filtros.equipamentoId = equipamento.id
+  filtros.equipamentoBusca = getEquipamentoLabel(equipamento)
+  equipamentoBuscaAberta.value = false
+}
+
+const selecionarPrimeiroEquipamento = () => {
+  const [primeiroEquipamento] = equipamentosFiltrados.value
+  if (primeiroEquipamento) selecionarEquipamento(primeiroEquipamento)
+}
+
+const limparEquipamentoSelecionado = () => {
+  filtros.equipamentoBusca = ''
+  filtros.equipamentoId = ''
+  equipamentoBuscaAberta.value = true
+}
+
 // ── Fetch ────────────────────────────────────────────────────────────────────
 
 const fetchOS = async () => {
+  if (!canViewOS.value) {
+    ordens.value = []
+    return
+  }
   try {
     const res = await axios.get(API_BASE, getHeaders())
     ordens.value = res.data
@@ -351,12 +606,15 @@ const fetchOS = async () => {
 }
 
 const limparFiltros = () => {
-  filtros.busca = ''
-  filtros.token = ''
+  filtros.equipamentoBusca = ''
+  filtros.equipamentoId = ''
+  filtros.setor = ''
   filtros.urgencia = ''
+  equipamentoBuscaAberta.value = false
 }
 
 const osFiltradas = computed(() => {
+  if (!canViewOS.value) return []
   const statusMap = {
     abertas: 'Aberto',
     andamento: 'Em Andamento',
@@ -364,21 +622,30 @@ const osFiltradas = computed(() => {
   }
   return ordens.value.filter(o => {
     const matchStatus = o.status === statusMap[tabAtiva.value]
-    const termo = filtros.busca.toLowerCase()
-    const matchBusca = !filtros.busca ||
-      o.id.toString().includes(termo) ||
-      o.equipamento_id_interno?.toString().includes(termo) ||
-      o.equipamento_nome?.toLowerCase().includes(termo)
-    const matchToken = !filtros.token ||
-      o.equipamento_qr_token?.toLowerCase().includes(filtros.token.toLowerCase())
+    const termo = normalizarBusca(filtros.equipamentoBusca)
+    const matchEquipamentoSelecionado = !filtros.equipamentoId ||
+      String(o.equipamento) === String(filtros.equipamentoId)
+    const matchEquipamentoDigitado = Boolean(filtros.equipamentoId) || !termo || [
+      o.equipamento,
+      o.equipamento_id_interno,
+      o.equipamento_nome,
+      o.equipamento_tipo,
+      o.equipamento_setor_nome
+    ].some((campo) => normalizarBusca(campo).includes(termo))
+    const matchSetor = !filtros.setor ||
+      String(o.equipamento_setor_id) === String(filtros.setor)
     const matchUrgencia = !filtros.urgencia || o.urgencia === filtros.urgencia
-    return matchStatus && matchBusca && matchToken && matchUrgencia
+    return matchStatus && matchEquipamentoSelecionado && matchEquipamentoDigitado && matchSetor && matchUrgencia
   })
 })
 
 const filtrarPorStatus = (status) => ordens.value.filter(o => o.status === status)
 
 const assumirOS = async (id) => {
+  if (!canAssumeOS.value) {
+    alert('Voce precisa das permissoes para alterar status e atribuir tecnico.')
+    return
+  }
   try {
     await axios.patch(`${API_BASE}${id}/`, { status: 'Em Andamento' }, getHeaders())
     fetchOS()
@@ -388,19 +655,75 @@ const assumirOS = async (id) => {
 }
 
 const verDetalhes = (os) => {
+  if (!canViewOS.value) {
+    alert('Voce nao possui permissao para visualizar ordens de servico.')
+    return
+  }
   osSelecionada.value = os
   modalDetalhes.value = true
 }
 
-const abrirModalFinalizar = (os) => {
+const gerarSugestaoIA = async () => {
+  if (!osSelecionada.value) return
+
+  const osId = osSelecionada.value.id
+  analiseIA.value = {
+    loading: true,
+    erro: '',
+    resultado: null,
+    osId
+  }
+
+  try {
+    const res = await axios.post(
+      'http://localhost:8000/api/analises-llm/sugerir-solucao-os/',
+      { os_id: osId },
+      getHeaders()
+    )
+
+    analiseIA.value = {
+      loading: false,
+      erro: '',
+      resultado: res.data,
+      osId
+    }
+  } catch (e) {
+    const detalhe = e.response?.data?.error || 'Nao foi possivel gerar a sugestao agora.'
+    analiseIA.value = {
+      loading: false,
+      erro: detalhe,
+      resultado: null,
+      osId
+    }
+  }
+}
+
+const abrirModalFinalizar = (os, descricaoInicial = '') => {
+  if (!canCloseOS.value) {
+    alert('Voce nao possui permissao para finalizar ordens de servico.')
+    return
+  }
   osSelecionada.value = os
-  finalizacao.value = { descricao_solucao: '' }
+  finalizacao.value = { descricao_solucao: descricaoInicial }
   isRecording.value = false
   transcrevendo.value = false
   modalFinalizar.value = true
 }
 
+const usarSugestaoNaFinalizacao = () => {
+  const sugestao = sugestaoIAAtual.value?.solucao
+  if (!sugestao || !osSelecionada.value) return
+
+  const os = osSelecionada.value
+  modalDetalhes.value = false
+  abrirModalFinalizar(os, sugestao)
+}
+
 const confirmarFinalizacao = async () => {
+  if (!canCloseOS.value) {
+    alert('Voce nao possui permissao para finalizar ordens de servico.')
+    return
+  }
   if (!finalizacao.value.descricao_solucao.trim()) return alert('Descreva a solução!')
   loading.value = true
   try {
@@ -492,6 +815,58 @@ onMounted(fetchOS)
 .filter-group { flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 4px; }
 .filter-input { padding: 0.6rem 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; font-size: 0.85rem; transition: border-color 0.2s; }
 .filter-input:focus { outline: none; border-color: #2563eb; background: #fff; }
+.equipment-filter-group { flex: 1.6; min-width: 280px; }
+.equipment-search { position: relative; }
+.equipment-search-box { position: relative; }
+.equipment-search-box .filter-input { box-sizing: border-box; width: 100%; padding-right: 2.5rem; }
+.equipment-clear {
+  position: absolute;
+  top: 50%;
+  right: 0.55rem;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #64748b;
+  line-height: 1;
+  cursor: pointer;
+}
+.equipment-clear:hover { color: #0f172a; border-color: #94a3b8; background: #f8fafc; }
+.equipment-results {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  right: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 0.35rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.14);
+}
+.equipment-result {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.18rem;
+  padding: 0.68rem 0.75rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #0f172a;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.equipment-result:hover, .equipment-result:focus { outline: none; background: #eff6ff; }
+.equipment-result-title { width: 100%; font-size: 0.86rem; font-weight: 800; overflow-wrap: anywhere; }
+.equipment-result-meta { width: 100%; color: #64748b; font-size: 0.75rem; line-height: 1.35; overflow-wrap: anywhere; }
+.equipment-empty { margin: 0; padding: 0.7rem 0.75rem; color: #64748b; font-size: 0.8rem; }
 .btn-clear-filters { background: #f1f5f9; color: #64748b; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; white-space: nowrap; }
 .btn-clear-filters:hover { background: #e2e8f0; }
 
@@ -520,7 +895,8 @@ onMounted(fetchOS)
 .os-card-body { padding: 1.2rem; flex-grow: 1; }
 .equip-name { font-size: 1.05rem; font-weight: 700; color: #1e293b; margin: 0 0 2px; }
 .equip-meta-row { display: flex; gap: 12px; }
-.equip-code, .equip-token { font-size: 0.72rem; color: #94a3b8; font-family: monospace; }
+.equip-code, .equip-token { font-size: 0.72rem; color: #94a3b8; }
+.equip-code { font-family: monospace; }
 .info-row { display: flex; gap: 6px; align-items: center; }
 .info-label { font-size: 0.78rem; color: #94a3b8; }
 .info-value { font-size: 0.78rem; font-weight: 600; color: #475569; }
@@ -551,7 +927,23 @@ onMounted(fetchOS)
 .attachments-container { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .attachment-link { display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; text-decoration: none; transition: 0.2s; }
 .attachment-link:hover { border-color: #2563eb; background: #eff6ff; }
-.file-icon { font-size: 1.4rem; line-height: 1; }
+.attachment-disabled { cursor: not-allowed; opacity: 0.75; }
+.attachment-disabled:hover { border-color: #e2e8f0; background: #f8fafc; }
+.file-icon {
+  width: 38px;
+  height: 28px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
 .file-meta { display: flex; flex-direction: column; gap: 2px; }
 .file-name { font-size: 0.88rem; font-weight: 700; color: #1e293b; }
 .file-action { font-size: 0.72rem; color: #2563eb; font-weight: 700; }
@@ -567,6 +959,40 @@ onMounted(fetchOS)
 .warning-label { color: #b45309; }
 .p-text-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; font-size: 0.9rem; color: #334155; line-height: 1.5; }
 .success-box { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+.ai-solution-panel { border: 1px solid #bfdbfe; background: #f8fbff; border-radius: 10px; padding: 1rem; }
+.ai-solution-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.ai-label { color: #1d4ed8; }
+.ai-helper { display: block; margin-top: 2px; color: #64748b; font-size: 0.78rem; line-height: 1.35; }
+.btn-ai-suggest, .btn-use-ai {
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.btn-ai-suggest { flex-shrink: 0; padding: 0.55rem 0.9rem; font-size: 0.78rem; }
+.btn-use-ai { padding: 0.48rem 0.75rem; font-size: 0.75rem; }
+.btn-ai-suggest:hover:not(:disabled), .btn-use-ai:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+.btn-ai-suggest:disabled, .btn-use-ai:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+.ai-loading-box, .ai-error-box, .ai-result-box {
+  margin-top: 0.75rem;
+  border-radius: 8px;
+  padding: 0.85rem;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+.ai-loading-box { background: #eff6ff; border: 1px dashed #93c5fd; color: #1d4ed8; }
+.ai-error-box { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+.ai-result-box { background: #ffffff; border: 1px solid #dbeafe; color: #334155; display: flex; flex-direction: column; gap: 0.75rem; }
+.ai-result-section { display: flex; flex-direction: column; gap: 0.25rem; }
+.ai-result-section p { margin: 0; white-space: pre-line; }
+.ai-result-section.muted { color: #64748b; }
+.ai-result-section.warning { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 0.65rem; color: #92400e; }
+.ai-result-label { color: #1e293b; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+.ai-solution-text { color: #0f172a; }
+.ai-result-footer { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding-top: 0.65rem; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 0.75rem; font-weight: 700; }
 .scrollable-content { max-height: 65vh; overflow-y: auto; padding-right: 4px; }
 
 /* MODAL */
@@ -602,6 +1028,11 @@ onMounted(fetchOS)
 }
 .inner-mic-btn:hover:not(:disabled) { background: #f1f5f9; }
 .inner-mic-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.icon-text {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
 .recording-active {
   background: #fee2e2 !important;
   border-color: #ef4444 !important;
@@ -621,6 +1052,8 @@ onMounted(fetchOS)
 .field-group { display: flex; flex-direction: column; gap: 4px; }
 
 .empty-results { text-align: center; padding: 3rem; color: #94a3b8; font-style: italic; }
+.empty-access h3 { margin: 0 0 0.35rem; color: #1e293b; }
+.empty-access p { margin: 0; color: #64748b; }
 .mt-3 { margin-top: 0.75rem; }
 .mt-4 { margin-top: 1rem; }
 .mb-4 { margin-bottom: 1rem; }

@@ -10,14 +10,17 @@ import AnaliseIA from '../views/AnaliseIA.vue'
 import OperadorAbrirChamado from '../views/OperadorAbrirChamado.vue'
 import Equipamentos from '../views/Equipamentos.vue'
 import GestaoOrdensServico from '../views/GestaoOrdensServico.vue' // Importação correta
-import { getStoredPermissions, hasCrudPermission } from '../utils/permissions'
+import { getStoredPermissions, hasCrudPermission, hasPermission } from '../utils/permissions'
 
 const getDashboardHome = () => {
   const permissions = getStoredPermissions()
   if (hasCrudPermission('grupos', permissions)) return '/dashboard/grupos'
   if (hasCrudPermission('usuarios', permissions)) return '/dashboard/usuarios'
+  if (hasCrudPermission('equipamentos', permissions)) return '/dashboard/equipamentos'
   if (hasCrudPermission('setores', permissions)) return '/dashboard/setores'
-  return '/dashboard/abrir-os'
+  if (hasPermission('ordens_servico.criar', permissions)) return '/dashboard/abrir-os'
+  if (hasPermission('ordens_servico.visualizar', permissions)) return '/dashboard/gestao-os'
+  return '/dashboard/analise'
 }
 
 const routes = [
@@ -31,12 +34,12 @@ const routes = [
       { path: 'grupos', component: Grupos, meta: { title: 'Grupos', permissionPrefix: 'grupos' } },
       { path: 'usuarios', component: Usuarios, meta: { title: 'Usuários', permissionPrefix: 'usuarios' } },
       { path: 'setores', component: Setores, meta: { title: 'Setores', permissionPrefix: 'setores' } },
-      { path: 'analise', component: AnaliseIA, meta: { title: 'Análise PANDORA' } },
-      { path: 'abrir-os', component: OperadorAbrirChamado, meta: { title: 'Abrir Chamado' } },
-      { path: 'equipamentos', component: Equipamentos, meta: { title: 'Equipamentos', permissionPrefix: 'setores' } }, // Adicionei a vírgula aqui
+      { path: 'analise', component: AnaliseIA, meta: { title: 'Análise Técnica' } },
+      { path: 'abrir-os', component: OperadorAbrirChamado, meta: { title: 'Abrir Chamado', permissionName: 'ordens_servico.criar' } },
+      { path: 'equipamentos', component: Equipamentos, meta: { title: 'Equipamentos', permissionPrefix: 'equipamentos' } },
       
       // AJUSTE AQUI: Removi a barra inicial do path para ser relativo ao /dashboard
-      { path: 'gestao-os', name: 'GestaoOS', component: GestaoOrdensServico, meta: { title: 'Gestão de OS' } }
+      { path: 'gestao-os', name: 'GestaoOS', component: GestaoOrdensServico, meta: { title: 'Ordens de Serviço', permissionName: 'ordens_servico.visualizar' } }
     ]
   }
 ]
@@ -52,11 +55,17 @@ router.beforeEach((to) => {
   const isAuthenticated = Boolean(token || sessionActive)
   const dashboardHome = getDashboardHome()
 
-  if (to.meta.requiresAuth && !isAuthenticated) return '/'
-  if (to.meta.guestOnly && isAuthenticated) return dashboardHome
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    return { path: '/', query: { redirect: to.fullPath } }
+  }
+  if (to.meta.guestOnly && isAuthenticated) {
+    return typeof to.query.redirect === 'string' ? to.query.redirect : dashboardHome
+  }
   if (to.path === '/dashboard' && dashboardHome !== '/dashboard') return dashboardHome
   
-  if (to.meta.permissionPrefix && !hasCrudPermission(to.meta.permissionPrefix)) return dashboardHome
+  const permissions = getStoredPermissions()
+  if (to.meta.permissionPrefix && !hasCrudPermission(to.meta.permissionPrefix, permissions)) return dashboardHome
+  if (to.meta.permissionName && !hasPermission(to.meta.permissionName, permissions)) return dashboardHome
 
   return true
 })
