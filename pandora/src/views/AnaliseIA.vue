@@ -227,7 +227,7 @@ const fetchOS = async () => {
   const empresaId = localStorage.getItem('empresa_id')
   try {
     const res = await axios.get(
-      `http://localhost:8000/api/ordens-servico/?empresa=${empresaId}`,
+      `http://127.0.0.1:8000/api/ordens-servico/?empresa=${empresaId}`,
       getHeaders()
     )
     ordensServico.value = res.data.filter(os => os.status !== 'Concluído')
@@ -285,7 +285,7 @@ const solicitarAnalise = async () => {
     if (osSelecionadaObj.value?.equipamento_id_interno) {
       try {
         const resHistorico = await axios.get(
-          `http://localhost:8000/api/ordens-servico/?equipamento_id=${osSelecionadaObj.value.equipamento_id_interno}&status=Concluído`,
+          `http://127.0.0.1:8000/api/ordens-servico/?equipamento_id=${osSelecionadaObj.value.equipamento_id_interno}&status=Concluído`,
           getHeaders()
         )
         historicoEquipamento = resHistorico.data || []
@@ -293,7 +293,7 @@ const solicitarAnalise = async () => {
     }
 
     const res = await axios.post(
-      'http://localhost:8000/api/analises-llm/analisar/',
+      'http://127.0.0.1:8000/api/analises-llm/analisar/',
       {
         descricao: descricao.value,
         os_id: osSelecionada.value || null,
@@ -339,7 +339,7 @@ const toggleRecording = async () => {
         transcrevendo.value = true
         try {
           const res = await axios.post(
-            'http://localhost:8000/api/analises-llm/transcrever/',
+            'http://127.0.0.1:8000/api/analises-llm/transcrever/',
             formData,
             {
               headers: {

@@ -1,4 +1,4 @@
-Ôªøimport axios from 'axios';
+import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
@@ -59,7 +59,7 @@ export const api = {
       });
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.detail || 'Usu√°rio ou senha incorretos.');
+      throw new Error(error.response?.data?.detail || 'Usu·rio ou senha incorretos.');
     }
   },
 
@@ -69,7 +69,7 @@ export const api = {
       return response.data;
     } catch (error) {
       const responseData = error.response?.data;
-      const message = responseData?.detail || 'N√£o foi poss√≠vel alterar a senha.';
+      const message = responseData?.detail || 'N„o foi possÌvel alterar a senha.';
       const apiError = new Error(message);
       apiError.data = responseData;
       throw apiError;
@@ -96,3 +96,4 @@ export const api = {
     return response.data;
   }
 };
+

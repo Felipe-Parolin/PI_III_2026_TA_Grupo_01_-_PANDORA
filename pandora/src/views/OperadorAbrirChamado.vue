@@ -287,7 +287,7 @@ const enviarAudioParaTranscricao = async (audioBlob, filename) => {
   formData.append('audio', audioBlob, filename)
 
   const res = await axios.post(
-    'http://localhost:8000/api/analises-llm/transcrever/',
+    'http://127.0.0.1:8000/api/analises-llm/transcrever/',
     formData,
     {
       headers: {
@@ -381,7 +381,7 @@ const fetchEquipamentos = async () => {
     return
   }
   try {
-    const res = await axios.get('http://localhost:8000/api/equipamentos/', getHeaders())
+    const res = await axios.get('http://127.0.0.1:8000/api/equipamentos/', getHeaders())
     equipamentos.value = res.data
     preselecionarEquipamentoPorQuery()
   } catch (e) {
@@ -430,7 +430,7 @@ const salvarChamado = async () => {
       status: 'Aberto',
       usuario_abertura: usuarioId
     }
-    const resOS = await axios.post('http://localhost:8000/api/ordens-servico/', payload, getHeaders())
+    const resOS = await axios.post('http://127.0.0.1:8000/api/ordens-servico/', payload, getHeaders())
     const osId = resOS.data.id
 
     // 2. Faz upload das fotos como DocumentoEquipamento com prefixo especial
@@ -441,7 +441,7 @@ const salvarChamado = async () => {
       docData.append('caminho_arquivo', foto.file)
       docData.append('nome_arquivo', `Problema OS#${osId} - ${foto.nome}`)
       try {
-        await axios.post('http://localhost:8000/api/documentos-equipamento/', docData, getHeaders())
+        await axios.post('http://127.0.0.1:8000/api/documentos-equipamento/', docData, getHeaders())
       } catch (docErr) {
         console.error('Erro ao salvar foto do problema:', docErr.response?.data)
         alert(`Erro no upload de "${foto.nome}":\n` + JSON.stringify(docErr.response?.data))

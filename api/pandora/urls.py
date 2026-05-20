@@ -19,7 +19,7 @@ router.register(r'categorias-documento', CategoriaDocumentoViewSet)
 router.register(r'documentos-equipamento', DocumentoEquipamentoViewSet)
 router.register(r'anexos-os', AnexoOSViewSet)
 router.register(r'analises-llm', AnaliseLLMViewSet)
-router.register(r'historicos-os', HistoricoOSViewSet)
+router.register(r'historicos-os', HistoricoOSViewSet, basename='historico-os')
 
 urlpatterns = [
     path('', include(router.urls)),
