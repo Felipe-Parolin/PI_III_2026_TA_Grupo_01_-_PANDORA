@@ -138,6 +138,8 @@ const navItems = computed(() => {
     items.push({ to: '/dashboard/abrir-os', label: 'Abrir Chamado', icon: 'clipboard' })
   if (hasPermission('ordens_servico.visualizar', permissions))
     items.push({ to: '/dashboard/gestao-os', label: 'Ordens de Serviço', icon: 'clipboard' })
+  if (hasPermission('ordens_servico.visualizar', permissions))
+    items.push({ to: '/dashboard/historico-os', label: 'Histórico de OS', icon: 'clipboard' })
 
   items.push({ to: '/dashboard/analise', label: 'Análise Técnica', icon: 'sparkles' })
   return items

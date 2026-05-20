@@ -88,7 +88,7 @@
           Em Andamento <span class="p-badge warning">{{ filtrarPorStatus('Em Andamento').length }}</span>
         </button>
         <button @click="tabAtiva = 'concluidas'" :class="['p-tab-btn', { active: tabAtiva === 'concluidas' }]">
-          Concluídas <span class="p-badge success">{{ filtrarPorStatus('Concluído').length }}</span>
+          Concluídas <span class="p-badge success">{{ filtrarPorStatus('Concluido').length }}</span>
         </button>
       </div>
 
@@ -446,7 +446,7 @@ const filtros = reactive({
   urgencia: ''
 })
 
-const API_BASE = 'http://localhost:8000/api/ordens-servico/'
+const API_BASE = 'http://127.0.0.1:8000/api/ordens-servico/'
 
 const getHeaders = () => ({
   headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` }
@@ -618,7 +618,7 @@ const osFiltradas = computed(() => {
   const statusMap = {
     abertas: 'Aberto',
     andamento: 'Em Andamento',
-    concluidas: 'Concluído'
+    concluidas: 'Concluido'
   }
   return ordens.value.filter(o => {
     const matchStatus = o.status === statusMap[tabAtiva.value]
@@ -676,7 +676,7 @@ const gerarSugestaoIA = async () => {
 
   try {
     const res = await axios.post(
-      'http://localhost:8000/api/analises-llm/sugerir-solucao-os/',
+      'http://127.0.0.1:8000/api/analises-llm/sugerir-solucao-os/',
       { os_id: osId },
       getHeaders()
     )
@@ -728,7 +728,7 @@ const confirmarFinalizacao = async () => {
   loading.value = true
   try {
     await axios.patch(`${API_BASE}${osSelecionada.value.id}/`, {
-      status: 'Concluído',
+      status: 'Concluido',
       descricao_solucao: finalizacao.value.descricao_solucao,
       data_fechamento: new Date().toISOString()
     }, getHeaders())
@@ -763,7 +763,7 @@ const toggleRecording = async () => {
         transcrevendo.value = true
         try {
           const res = await axios.post(
-            'http://localhost:8000/api/analises-llm/transcrever/',
+            'http://127.0.0.1:8000/api/analises-llm/transcrever/',
             formData,
             {
               headers: {

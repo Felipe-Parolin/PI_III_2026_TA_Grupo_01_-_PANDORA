@@ -74,7 +74,7 @@ export default {
     async solicitarAnaliseIA(descricaoChamado) {
       try {
         // Ajustado para a URL do seu router: /analises-llm/analisar/
-        const response = await fetch('http://localhost:8000/analises-llm/analisar/', {
+        const response = await fetch('http://127.0.0.1:8000/analises-llm/analisar/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ descricao: descricaoChamado })

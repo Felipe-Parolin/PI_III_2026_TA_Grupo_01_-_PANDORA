@@ -10,6 +10,7 @@ import AnaliseIA from '../views/AnaliseIA.vue'
 import OperadorAbrirChamado from '../views/OperadorAbrirChamado.vue'
 import Equipamentos from '../views/Equipamentos.vue'
 import GestaoOrdensServico from '../views/GestaoOrdensServico.vue' // Importação correta
+import TecnicoHistoricoManutencoes from '../views/TecnicoHistoricoManutencoes.vue'
 import { getStoredPermissions, hasCrudPermission, hasPermission } from '../utils/permissions'
 
 const getDashboardHome = () => {
@@ -37,6 +38,7 @@ const routes = [
       { path: 'analise', component: AnaliseIA, meta: { title: 'Análise Técnica' } },
       { path: 'abrir-os', component: OperadorAbrirChamado, meta: { title: 'Abrir Chamado', permissionName: 'ordens_servico.criar' } },
       { path: 'equipamentos', component: Equipamentos, meta: { title: 'Equipamentos', permissionPrefix: 'equipamentos' } },
+      { path: 'historico-os', component: TecnicoHistoricoManutencoes, meta: { title: 'Historico de OS', permissionName: 'ordens_servico.visualizar' } },
       
       // AJUSTE AQUI: Removi a barra inicial do path para ser relativo ao /dashboard
       { path: 'gestao-os', name: 'GestaoOS', component: GestaoOrdensServico, meta: { title: 'Ordens de Serviço', permissionName: 'ordens_servico.visualizar' } }
