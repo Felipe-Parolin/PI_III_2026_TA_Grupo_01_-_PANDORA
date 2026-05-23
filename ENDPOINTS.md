@@ -233,12 +233,14 @@ O Django REST Framework com `DefaultRouter` gera automaticamente os seguintes pa
 | Campo | Tipo | Obrigatório | Descrição |
 |-------|------|-------------|-----------|
 | `nome_equipamento` | string | Sim | Nome ou modelo do equipamento |
-| `numero_serie` | string | Não | Número de série |
-| `descricao` | string | Não | Descrição detalhada |
-| `setor` | integer | Não | ID do setor onde está alocado |
-| `empresa` | integer | Sim | ID da empresa proprietária |
-| `status` | string | Não | Status atual (ex: Ativo, Inativo) |
-| `data_aquisicao` | date | Não | Data de aquisição (`YYYY-MM-DD`) |
+| `tipo_equipamento` | string | Sim | Tipo/categoria do equipamento |
+| `status` | string | Sim | Status atual (ex: `Ativo`, `Inativo`) |
+| `id_interno` | integer | Sim | Identificador interno do equipamento |
+| `qr_code_token` | string | Sim | Token único para geração do QR Code |
+| `setor` | integer | Sim | ID do setor onde está alocado |
+| `empresa` | integer | Não | ID da empresa proprietária |
+| `foto` | file | Não | Foto do equipamento (`multipart/form-data`) |
+| `manual_tecnico` | file | Não | Manual técnico em arquivo (`multipart/form-data`) |
 
 ---
 
@@ -258,16 +260,33 @@ O Django REST Framework com `DefaultRouter` gera automaticamente os seguintes pa
 **Campos:**
 | Campo | Tipo | Obrigatório | Descrição |
 |-------|------|-------------|-----------|
-| `titulo` | string | Sim | Título descritivo da OS |
-| `descricao` | string | Não | Descrição detalhada do problema |
-| `status` | string | Sim | `Aberto` \| `Em Andamento` \| `Concluído` |
+| `descricao_problema` | string | Sim | Descrição detalhada do problema |
+| `urgencia` | string | Sim | Nível de urgência (ex: `Baixa`, `Média`, `Alta`) |
+| `status` | string | Sim | `Aberto` \| `Em Andamento` \| `Concluido` |
 | `equipamento` | integer | Sim | ID do equipamento relacionado |
-| `usuario_solicitante` | integer | Não | ID do usuário que abriu a OS |
+| `usuario_abertura` | integer | Sim | ID do usuário que abriu a OS |
+| `foto_problema` | file | Não | Foto do problema (`multipart/form-data`) |
+| `descricao_solucao` | string | Não | Descrição da solução aplicada |
 | `usuario_tecnico` | integer | Não | ID do técnico responsável *(preenchido automaticamente)* |
-| `data_abertura` | datetime | Não | Data/hora de criação |
-| `data_conclusao` | datetime | Não | Data/hora de conclusão |
+| `data_abertura` | datetime | Não | Data/hora de criação *(gerada automaticamente)* |
+| `data_fechamento` | datetime | Não | Data/hora de conclusão |
+| `empresa` | integer | Não | ID da empresa *(preenchido automaticamente)* |
 
-> **Regra de negócio:** ao alterar o `status` para `Em Andamento` ou `Concluído` via `PUT`/`PATCH`, o campo `usuario_tecnico` é preenchido automaticamente com o usuário autenticado na requisição.
+> **Regra de negócio:** ao alterar o `status` para `Em Andamento` ou `Concluido` via `PUT`/`PATCH`, o campo `usuario_tecnico` é preenchido automaticamente com o usuário autenticado na requisição.
+
+**Campos extras somente leitura na resposta (via serializer):**
+| Campo | Descrição |
+|-------|-----------|
+| `usuario_abertura_nome` | Nome do usuário que abriu a OS |
+| `usuario_tecnico_nome` | Nome do técnico responsável |
+| `equipamento_nome` | Nome do equipamento |
+| `equipamento_id_interno` | ID interno do equipamento |
+| `equipamento_qr_token` | Token QR Code do equipamento |
+| `equipamento_tipo` | Tipo do equipamento |
+| `equipamento_setor_id` | ID do setor do equipamento |
+| `equipamento_setor_nome` | Nome do setor do equipamento |
+| `equipamento_foto` | URL da foto do equipamento |
+| `equipamento_documentos` | Lista de documentos vinculados ao equipamento |
 
 ---
 
@@ -287,10 +306,15 @@ O Django REST Framework com `DefaultRouter` gera automaticamente os seguintes pa
 **Campos:**
 | Campo | Tipo | Obrigatório | Descrição |
 |-------|------|-------------|-----------|
-| `ordem_servico` | integer | Sim | ID da OS relacionada |
-| `usuario` | integer | Não | ID do usuário que realizou a ação |
-| `descricao` | string | Sim | Descrição da ação ou alteração registrada |
-| `data_registro` | datetime | Não | Data/hora do registro *(gerada automaticamente)* |
+| `os` | integer | Sim | ID da OS relacionada |
+| `usuario_modificacao` | integer | Sim | ID do usuário que realizou a alteração |
+| `campo_alterado` | string | Não | Nome do campo que foi modificado |
+| `valor_anterior` | string | Não | Valor do campo antes da alteração |
+| `valor_novo` | string | Não | Valor do campo após a alteração |
+| `comentario` | string | Não | Comentário livre sobre a alteração |
+| `data_modificacao` | datetime | Não | Data/hora do registro *(gerada automaticamente)* |
+
+> **Nota:** os registros são ordenados por `-data_modificacao` (mais recentes primeiro). O histórico é gerado automaticamente pela API ao criar ou atualizar uma OS — criação manual via este endpoint é reservada a casos excepcionais.
 
 ---
 
@@ -368,7 +392,7 @@ O Django REST Framework com `DefaultRouter` gera automaticamente os seguintes pa
 
 **Base URL:** `/api/analises-llm/`
 
-Além das rotas padrão, este recurso possui dois endpoints customizados para integração com o modelo de linguagem via **Groq**.
+Além das rotas padrão, este recurso possui três endpoints customizados para integração com o modelo de linguagem via **Groq**.
 
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
@@ -379,6 +403,7 @@ Além das rotas padrão, este recurso possui dois endpoints customizados para in
 | `PATCH` | `/api/analises-llm/{id}/` | Atualiza parcialmente uma análise |
 | `DELETE` | `/api/analises-llm/{id}/` | Remove uma análise |
 | `POST` | `/api/analises-llm/analisar/` | Envia descrição de manutenção para análise pelo LLM |
+| `POST` | `/api/analises-llm/sugerir-solucao-os/` | Sugere solução para uma OS com base no histórico do equipamento |
 | `POST` | `/api/analises-llm/transcrever/` | Transcreve um arquivo de áudio para texto via LLM |
 
 ---
@@ -390,6 +415,8 @@ Envia uma descrição de problema ou ticket de manutenção para análise pelo m
 | Campo | Tipo | Obrigatório | Descrição |
 |-------|------|-------------|-----------|
 | `descricao` | string | Sim | Texto com a descrição do problema a ser analisado |
+| `historico_equipamento` | array | Não | Lista de OSs anteriores do equipamento para enriquecer o contexto |
+| `os_id` | integer | Não | ID da OS vinculada (incluso no contexto enviado ao LLM) |
 
 **Response `200 OK`:**
 ```json
@@ -404,6 +431,33 @@ Envia uma descrição de problema ou ticket de manutenção para análise pelo m
 |--------|-----------|
 | `200` | Análise realizada com sucesso |
 | `400` | Campo `descricao` não informado |
+
+---
+
+### `POST /api/analises-llm/sugerir-solucao-os/`
+Sugere uma solução para uma OS aberta com base nos dados da OS e no histórico de manutenções do equipamento. Retorna a sugestão do LLM junto com o número de OSs históricas consideradas.
+
+**Request Body:**
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `os_id` | integer | Sim | ID da OS para a qual se deseja sugestão |
+
+**Response `200 OK`:**
+```json
+{
+  "diagnostico": "...",
+  "sugestoes": ["..."],
+  "classificacao": "...",
+  "historico_considerado": 3
+}
+```
+
+| Código | Descrição |
+|--------|-----------|
+| `200` | Sugestão gerada com sucesso |
+| `400` | Campo `os_id` não informado |
+| `403` | Usuário sem empresa vinculada |
+| `404` | OS não encontrada ou fora da empresa do usuário |
 
 ---
 
@@ -428,6 +482,7 @@ Transcreve um arquivo de áudio para texto via LLM.
 |--------|-----------|
 | `200` | Transcrição realizada com sucesso |
 | `400` | Arquivo de áudio não enviado |
+| `502` | Não foi possível transcrever o áudio |
 
 ---
 

@@ -1,12 +1,12 @@
 <template>
   <div class="crud-page">
-    <section class="page-header animate-fade-in">
+    <section class="page-header">
       <p class="eyebrow">Manutenção Corretiva</p>
       <h2>Abrir Novo Chamado</h2>
       <p class="page-copy">Relate falhas enviando áudio, texto e imagens para a equipe técnica.</p>
     </section>
 
-    <section v-if="canUseOpenCall" class="card form-card animate-fade-in">
+    <section v-if="canUseOpenCall" class="card form-card">
       <div class="card-header">
         <h3>Detalhes da Ocorrência</h3>
         <p>Preencha os dados da falha para abrir o chamado técnico.</p>
@@ -152,7 +152,7 @@
       </form>
     </section>
 
-    <section v-else class="card empty-card animate-fade-in">
+    <section v-else class="card empty-card">
       <div class="card-header">
         <h3>Acesso limitado</h3>
         <p>Para abrir chamados, libere ordens_servico.criar e equipamentos.visualizar.</p>
@@ -525,6 +525,12 @@ onMounted(fetchEquipamentos)
 .equipment-search-box input {
   padding-right: 2.8rem;
 }
+/* Remove o X nativo do browser em inputs type="search" */
+.equipment-search-box input[type="search"]::-webkit-search-cancel-button,
+.equipment-search-box input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
 .equipment-clear {
   position: absolute;
   top: 50%;
@@ -699,8 +705,6 @@ onMounted(fetchEquipamentos)
 .btn-primary { background: #2563eb; color: #ffffff; box-shadow: 0 10px 24px rgba(37, 99, 235, 0.24); }
 
 /* ── Animação ─────────────────────────────────────── */
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-.animate-fade-in { animation: fadeIn 0.4s ease-out; }
 
 /* ── Mobile ≤ 768px ───────────────────────────────── */
 @media (max-width: 768px) {

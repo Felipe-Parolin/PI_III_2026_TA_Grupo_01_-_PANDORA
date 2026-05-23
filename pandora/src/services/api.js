@@ -59,7 +59,7 @@ export const api = {
       });
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.detail || 'Usuário ou senha incorretos.');
+      throw new Error(error.response?.data?.detail || 'Usuario ou senha incorretos.');
     }
   },
 
@@ -69,7 +69,7 @@ export const api = {
       return response.data;
     } catch (error) {
       const responseData = error.response?.data;
-      const message = responseData?.detail || 'Não foi possível alterar a senha.';
+      const message = responseData?.detail || 'Nao foi possivel alterar a senha.';
       const apiError = new Error(message);
       apiError.data = responseData;
       throw apiError;
@@ -91,9 +91,13 @@ export const api = {
     return response.data;
   },
 
+  patch: async (endpoint, id, data) => {
+    const response = await apiClient.patch(`/api/${endpoint}/${id}/`, data);
+    return response.data;
+  },
+
   delete: async (endpoint, id) => {
     const response = await apiClient.delete(`/api/${endpoint}/${id}/`);
     return response.data;
   }
 };
-

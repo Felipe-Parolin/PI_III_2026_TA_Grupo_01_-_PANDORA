@@ -28,7 +28,7 @@
 
             <div class="input-group">
               <label for="cnpj">CNPJ</label>
-              <input id="cnpj" v-model="form.cnpj" type="text" placeholder="00.000.000/0000-00" required />
+              <input id="cnpj" :value="form.cnpj" @input="onCnpj" type="text" placeholder="00.000.000/0000-00" maxlength="18" required />
             </div>
           </div>
 
@@ -44,7 +44,7 @@
 
           <div class="input-group">
             <label for="telefone">Telefone / WhatsApp</label>
-            <input id="telefone" v-model="form.telefone" type="text" placeholder="(00) 00000-0000" required />
+            <input id="telefone" :value="form.telefone" @input="onTelefone" type="text" placeholder="(00) 00000-0000" maxlength="15" required />
           </div>
 
           <div class="form-actions">
@@ -74,9 +74,36 @@ const form = reactive({
   telefone: ''
 })
 
+const aplicarMascara = (valor, mascara) => {
+  let i = 0
+  const v = valor.replace(/\D/g, '')
+  return mascara.replace(/#/g, () => v[i++] || '').replace(/#.*/, '')
+}
+
+const onCnpj = (e) => {
+  form.cnpj = aplicarMascara(e.target.value, '##.###.###/####-##')
+}
+
+const onTelefone = (e) => {
+  const nums = e.target.value.replace(/\D/g, '')
+  if (nums.length <= 10) {
+    form.telefone = aplicarMascara(e.target.value, '(##) ####-####')
+  } else {
+    form.telefone = aplicarMascara(e.target.value, '(##) #####-####')
+  }
+}
+
 const handleRequest = () => {
-  console.log('Solicitação enviada', form)
-  alert('Solicitação enviada com sucesso! Aguarde nosso contato.')
+  const assunto = encodeURIComponent(`Solicitação de Acesso — ${form.empresa}`)
+  const corpo = encodeURIComponent(
+`Solicitação de acesso ao sistema Pandora
+
+Empresa: ${form.empresa}
+CNPJ: ${form.cnpj}
+Responsável: ${form.nome}
+E-mail: ${form.email}
+Telefone: ${form.telefone}`)
+  window.open(`https://mail.google.com/mail/?view=cm&to=felipe.parolin@alunos.fho.edu.br&su=${assunto}&body=${corpo}`, '_blank')
 }
 </script>
 
