@@ -1,12 +1,12 @@
 <template>
   <div class="crud-page">
-    <section class="page-header animate-fade-in">
+    <section class="page-header">
       <p class="eyebrow">Diagnóstico Técnico</p>
       <h2>Análise Preditiva</h2>
       <p class="page-copy">Gere pareceres técnicos baseados nos sintomas, histórico de falhas e manuais dos equipamentos.</p>
     </section>
 
-    <section class="card form-card animate-fade-in">
+    <section class="card form-card">
       <div class="card-header">
         <h3>Detalhes da Ocorrência</h3>
         <p>Filtre e vincule uma Ordem de Serviço para enriquecer o diagnóstico com o histórico do equipamento.</p>
@@ -99,7 +99,7 @@
     </section>
 
     <!-- ── RESULTADO ────────────────────────────────────────────────── -->
-    <section v-if="resultado || loading" class="card result-card animate-slide-up">
+    <section v-if="resultado || loading" class="card result-card">
       <div :class="['status-bar', resultado?.urgencia?.toLowerCase() || 'processando']"></div>
 
       <div class="result-header">
@@ -590,10 +590,6 @@ onMounted(fetchOS)
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Animações ────────────────────────────────────── */
-@keyframes fadeIn  { from { opacity: 0; transform: translateY(5px);  } to { opacity: 1; transform: translateY(0); } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-.animate-fade-in  { animation: fadeIn  0.4s ease-out; }
-.animate-slide-up { animation: slideUp 0.4s ease-out; }
 
 /* ── Mobile ───────────────────────────────────────── */
 @media (max-width: 768px) {

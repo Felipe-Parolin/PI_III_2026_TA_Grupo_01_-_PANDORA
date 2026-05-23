@@ -1,12 +1,12 @@
 <template>
   <div class="crud-page">
-    <section class="page-header animate-fade-in">
+    <section class="page-header">
       <p class="eyebrow">Ativos Técnicos</p>
       <h2>Gestão de Equipamentos</h2>
       <p class="page-copy">Cadastre, organize e vincule documentação técnica às máquinas da unidade.</p>
     </section>
 
-    <section v-if="canOpenEquipmentForm" class="card form-card animate-fade-in">
+    <section v-if="canOpenEquipmentForm" class="card form-card">
       <div class="card-header">
         <h3>{{ editandoId ? 'Editar Equipamento' : 'Novo Equipamento' }}</h3>
         <p>Preencha os dados do ativo e vincule a documentação técnica.</p>
@@ -90,8 +90,11 @@
 
               <div v-if="fotos.length" class="file-chip-list">
                 <div v-for="f in fotosExistentes" :key="'existing-'+f.id" class="file-chip foto-chip">
-                  <img :src="f.url" class="chip-thumb" />
+                  <a :href="f.url" target="_blank" rel="noopener" class="chip-thumb-link">
+                    <img :src="f.url" class="chip-thumb" />
+                  </a>
                   <span class="chip-name">{{ f.nome }}</span>
+                  <a :href="f.url" target="_blank" rel="noopener" class="chip-view-btn" title="Visualizar">&#128065;</a>
                   <button v-if="canDeleteDocuments" type="button" @click="removerFotoExistente(f)" class="chip-remove" title="Remover">×</button>
                 </div>
                 <div v-for="(f, i) in fotosNovas" :key="'new-'+i" class="file-chip foto-chip foto-chip-new">
@@ -138,6 +141,7 @@
                     <span class="chip-name">{{ m.nome }}</span>
                     <span class="chip-category">{{ getCategoriaNome(m.categoria) }}</span>
                   </div>
+                  <a :href="m.url" target="_blank" rel="noopener" class="chip-view-btn" title="Abrir documento">&#128065;</a>
                   <select
                     v-if="canEditDocuments && canViewCategories"
                     v-model="m.categoria"
@@ -191,7 +195,7 @@
       </form>
     </section>
 
-    <section v-if="canViewEquipment" class="card table-card animate-fade-in">
+    <section v-if="canViewEquipment" class="card table-card">
       <div class="card-header">
         <h3>Equipamentos Cadastrados</h3>
         <p>{{ equipamentos.length }} ativo(s) registrado(s).</p>
@@ -233,7 +237,7 @@
       </div>
     </section>
 
-    <section v-if="!canViewEquipment && !canOpenEquipmentForm" class="card empty-card animate-fade-in">
+    <section v-if="!canViewEquipment && !canOpenEquipmentForm" class="card empty-card">
       <div class="card-header">
         <h3>Acesso limitado</h3>
         <p>Solicite permissao para visualizar equipamentos ou criar novos ativos.</p>
@@ -803,11 +807,11 @@ const desenharTextoQuebrado = (ctx, texto, x, y, larguraMaxima, alturaLinha, lim
 
 const desenharCampoEtiqueta = (ctx, rotulo, valor, x, y, largura) => {
   ctx.fillStyle = '#64748b'
-  ctx.font = '700 20px Arial'
+  ctx.font = '700 20px system-ui, -apple-system, Segoe UI, sans-serif'
   ctx.fillText(rotulo.toUpperCase(), x, y)
 
   ctx.fillStyle = '#0f172a'
-  ctx.font = '700 30px Arial'
+  ctx.font = '700 30px system-ui, -apple-system, Segoe UI, sans-serif'
   desenharTextoQuebrado(ctx, valor || 'Não informado', x, y + 34, largura, 34, 2)
 }
 
@@ -840,9 +844,9 @@ const gerarImagemEtiqueta = async (equipamento) => {
   ctx.fillRect(16, 16, canvas.width - 32, 86)
 
   ctx.fillStyle = '#ffffff'
-  ctx.font = '800 36px Arial'
+  ctx.font = '800 36px system-ui, -apple-system, Segoe UI, sans-serif'
   ctx.fillText('PANDORA', 48, 70)
-  ctx.font = '700 20px Arial'
+  ctx.font = '700 20px system-ui, -apple-system, Segoe UI, sans-serif'
   ctx.fillText('ETIQUETA DE ATIVO', 740, 70)
 
   ctx.fillStyle = '#f8fafc'
@@ -853,11 +857,11 @@ const gerarImagemEtiqueta = async (equipamento) => {
   ctx.drawImage(qrImage, 646, 152, 236, 236)
 
   ctx.fillStyle = '#1e293b'
-  ctx.font = '700 20px Arial'
+  ctx.font = '700 20px system-ui, -apple-system, Segoe UI, sans-serif'
   ctx.fillText('Escaneie para abrir OS', 646, 444)
 
   ctx.fillStyle = '#475569'
-  ctx.font = '600 15px Arial'
+  ctx.font = '600 15px system-ui, -apple-system, Segoe UI, sans-serif'
  
 
   desenharCampoEtiqueta(ctx, 'Equipamento', equipamento.nome_equipamento, 56, 158, 500)
@@ -866,10 +870,10 @@ const gerarImagemEtiqueta = async (equipamento) => {
   desenharCampoEtiqueta(ctx, 'Status', equipamento.status, 326, 358, 230)
 
   ctx.fillStyle = '#64748b'
-  ctx.font = '700 18px Arial'
+  ctx.font = '700 18px system-ui, -apple-system, Segoe UI, sans-serif'
   ctx.fillText('TOKEN QR', 56, 462)
   ctx.fillStyle = '#0f172a'
-  ctx.font = '700 24px Arial'
+  ctx.font = '700 24px system-ui, -apple-system, Segoe UI, sans-serif'
   desenharTextoQuebrado(ctx, equipamento.qr_code_token || 'Não informado', 56, 494, 500, 26, 1)
 
   return {
@@ -1024,6 +1028,8 @@ onMounted(() => { fetchSetores(); fetchEquipamentos(); fetchCategoriasDocumento(
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .upload-block-header {
@@ -1150,24 +1156,60 @@ onMounted(() => { fetchSetores(); fetchEquipamentos(); fetchCategoriasDocumento(
 .foto-chip-new { border-style: dashed; }
 .pdf-chip  { background: #fef3c7; border: 1px solid #fde68a; color: #92400e; }
 .pdf-chip-new { border-style: dashed; }
+
+/* document-chip: grid fixo — PDF | nome+cat | 👁 | select | × */
+/* display:grid !important sobrescreve o inline-flex do .file-chip */
 .document-chip {
-  width: 100%;
-  border-radius: 12px;
-  padding: 0.55rem 0.6rem;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
   align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 100%;
+  border-radius: 12px;
+  padding: 0.55rem 0.65rem;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
-.chip-thumb { width: 20px; height: 20px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
-.chip-icon  { font-size: 0.65rem; font-weight: 800; letter-spacing: 0.04em; flex-shrink: 0; }
-.chip-main { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 0.15rem; }
-.chip-name  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; }
-.document-chip .chip-name { max-width: 100%; }
-.chip-category { font-size: 0.68rem; color: #64748b; font-weight: 600; }
-.chip-category-select {
-  width: min(190px, 42%);
-  padding: 0.42rem 0.5rem;
+.chip-thumb { width: 20px; height: 20px; border-radius: 4px; object-fit: cover; }
+.chip-icon  { font-size: 0.65rem; font-weight: 800; letter-spacing: 0.04em; }
+.chip-main  { min-width: 0; display: flex; flex-direction: column; gap: 0.1rem; overflow: hidden; }
+.chip-name  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.78rem; }
+.chip-category { font-size: 0.68rem; color: #64748b; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* select dentro do document-chip: tamanho fixo, não cresce */
+.document-chip .chip-category-select {
+  width: 145px !important;
+  padding: 0.35rem 0.45rem;
+  font-size: 0.74rem;
+}
+.chip-thumb-link {
+  display: contents;
+  cursor: zoom-in;
+}
+.chip-thumb-link img {
+  transition: opacity 0.15s;
+}
+.chip-thumb-link:hover img {
+  opacity: 0.8;
+}
+.chip-view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 0.85rem;
+  text-decoration: none;
   flex-shrink: 0;
+  transition: background 0.15s;
+}
+.chip-view-btn:hover {
+  background: #dbeafe;
 }
 .chip-remove {
   background: none; border: none; cursor: pointer;
@@ -1211,8 +1253,6 @@ onMounted(() => { fetchSetores(); fetchEquipamentos(); fetchCategoriasDocumento(
 }
 
 /* ── Animação ─────────────────────────────────────── */
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-.animate-fade-in { animation: fadeIn 0.4s ease-out; }
 
 /* ── Mobile ≤ 768px ───────────────────────────────── */
 @media (max-width: 768px) {
@@ -1221,8 +1261,8 @@ onMounted(() => { fetchSetores(); fetchEquipamentos(); fetchCategoriasDocumento(
   .card { border-radius: 16px; }
   .input-row { grid-template-columns: 1fr; }
   .upload-blocks-row { grid-template-columns: 1fr; }
-  .document-chip { align-items: flex-start; flex-wrap: wrap; }
-  .chip-category-select { width: 100%; }
+  .document-chip { grid-template-columns: auto 1fr auto auto auto; }
+  .document-chip .chip-category-select { width: 120px !important; }
   .form-actions { flex-direction: column; }
   .form-actions .btn { width: 100%; }
   .table-wrap { border-radius: 12px; border: 1px solid #e2e8f0; }
@@ -1283,15 +1323,18 @@ onMounted(() => { fetchSetores(); fetchEquipamentos(); fetchCategoriasDocumento(
   margin: 0 0 0.25rem;
   color: #2563eb;
   font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
 .modal-header h3 {
   margin: 0;
   color: #0f172a;
   font-size: 1.1rem;
+  font-weight: 700;
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
 .modal-close {
@@ -1343,19 +1386,23 @@ onMounted(() => { fetchSetores(); fetchEquipamentos(); fetchCategoriasDocumento(
 }
 
 .label-url-box span {
+  display: block;
   color: #64748b;
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
 .label-url-box a {
+  display: block;
   color: #1d4ed8;
   font-size: 0.82rem;
   font-weight: 600;
   overflow-wrap: anywhere;
   text-decoration: none;
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
 .modal-footer {
@@ -1367,7 +1414,7 @@ onMounted(() => { fetchSetores(); fetchEquipamentos(); fetchCategoriasDocumento(
   background: #f8fafc;
 }
 
-.modal-enter-active,
+.modal-enter-active,a
 .modal-leave-active {
   transition: opacity 0.2s ease;
 }

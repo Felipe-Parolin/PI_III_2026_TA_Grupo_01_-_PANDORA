@@ -5,7 +5,7 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-env_path = os.path.join(BASE_DIR, 'pandora', '.env')
+env_path = os.path.join(BASE_DIR, '.env')
 load_dotenv(dotenv_path=env_path)
 
 GROQ_API_KEY = os.getenv('GROQ_API_KEY') or os.getenv('API_KEY')
@@ -28,7 +28,20 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
-    'pandora',
+    'app_core',
+    'app_empresa',
+    'app_setor',
+    'app_permissao',
+    'app_grupo',
+    'app_usuario',
+    'app_equipamento',
+    'app_categoria',
+    'app_documento',
+    'app_os',
+    'app_anexo',
+    'app_historico',
+    'app_analise',
+    'authentication',
 ]
 
 MIDDLEWARE = [
@@ -68,7 +81,7 @@ DATABASES = {
     }
 }
 
-AUTH_USER_MODEL = 'pandora.Usuario'
+AUTH_USER_MODEL = 'app_usuario.Usuario'
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -119,6 +132,6 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 AUTHENTICATION_BACKENDS = [
-    'pandora.backends.PandoraBackend',
+    'app_core.backends.PandoraBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]

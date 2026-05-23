@@ -33,11 +33,23 @@ Antes de tudo, instale as ferramentas abaixo caso ainda não as tenha:
 
 ### 2. Criar o arquivo `.env`
 
-Antes de rodar qualquer comando, crie o arquivo `.env` dentro da pasta `api/pandora` com o seguinte conteúdo:
+Antes de rodar qualquer comando, crie o arquivo `.env` dentro da pasta `api`.
+
+#### 2.1 Gerar sua chave da Groq
+O projeto utiliza a API da Groq para as funcionalidades de IA. Você precisa gerar sua própria chave gratuita:
+
+1. Acesse https://console.groq.com/home e crie uma conta (ou faça login)
+2. No menu lateral, clique em **API Keys**
+3. Clique em **Create API Key**, dê um nome e copie a chave gerada
+
+> ⚠️ A chave só é exibida uma vez — guarde-a antes de fechar a janela.
+
+#### 2.2 Conteúdo do `.env`
+Com a chave em mãos, crie o arquivo `.env` com o seguinte conteúdo, substituindo o valor de `GROQ_API_KEY`:
 
 ```
 VITE_API_BASE_URL=http://127.0.0.1:8000/api
-GROQ_API_KEY=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
+GROQ_API_KEY=sua_chave_aqui
 ```
 
 ---

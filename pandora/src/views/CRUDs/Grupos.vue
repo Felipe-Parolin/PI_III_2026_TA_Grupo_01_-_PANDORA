@@ -3,15 +3,15 @@
     <section class="page-header">
       <div>
         <p class="eyebrow">Acessos</p>
-        <h2>Gestao de Grupos</h2>
-        <p class="page-copy">Crie grupos da empresa logada e marque as permissoes que cada grupo pode ter.</p>
+        <h2>Gestão de Grupos</h2>
+        <p class="page-copy">Crie grupos da empresa logada e marque as permissões que cada grupo pode ter.</p>
       </div>
     </section>
 
     <section v-if="canCreate || canEdit || canAssignPermissions" class="card form-card">
       <div class="card-header">
         <h3>{{ isEditing ? 'Editar grupo' : 'Novo grupo' }}</h3>
-        <p>Defina o nome do grupo e selecione as permissoes liberadas para ele.</p>
+        <p>Defina o nome do grupo e selecione as permissões liberadas para ele.</p>
       </div>
 
       <form @submit.prevent="saveGrupo" class="crud-form">
@@ -29,7 +29,7 @@
         <div class="permission-panel">
           <div class="permission-panel-header">
             <div>
-              <h4>Permissoes do grupo</h4>
+              <h4>Permissões do grupo</h4>
               <p>Marque tudo o que esse grupo pode visualizar ou executar.</p>
             </div>
             <div class="permission-toolbar">
@@ -61,7 +61,7 @@
               <header class="permission-card-header">
                 <div>
                   <h5>{{ activePermissionGroup.label }}</h5>
-                  <p>Escolha as acoes permitidas para este modulo.</p>
+                  <p>Escolha as ações permitidas para este módulo.</p>
                 </div>
                 <span>{{ countSelectedByGroup(activePermissionGroup.items) }} selecionada(s)</span>
               </header>
@@ -108,8 +108,8 @@
             <tr>
               <th>ID</th>
               <th>Nome do Grupo</th>
-              <th>Permissoes</th>
-              <th class="col-acoes">Acoes</th>
+              <th>Permissões</th>
+              <th class="col-acoes">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -487,26 +487,55 @@ watch(
   .permissions-layout { grid-template-columns: 1fr; }
   .permissions-sidebar {
     flex-direction: row;
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-    gap: 0.5rem;
-    scrollbar-width: none;
+    flex-wrap: wrap;
+    gap: 0.4rem;
   }
-  .permissions-sidebar::-webkit-scrollbar { display: none; }
-  .permission-tab { min-width: 180px; flex-shrink: 0; }
+  .permission-tab {
+    flex: 1 1 auto;
+    min-width: 120px;
+    max-width: 100%;
+    padding: 0.65rem 0.8rem;
+  }
 }
 
 /* ── Mobile ≤ 768px ───────────────────────────────── */
 @media (max-width: 768px) {
   .page-header { padding: 1.1rem 1.2rem; border-radius: 16px; }
-  .form-card, .table-card, .empty-card { padding: 1.1rem 1.2rem; border-radius: 16px; }
+  .form-card, .table-card, .empty-card { padding: 1rem 1rem; border-radius: 16px; }
   .card { border-radius: 16px; }
-  .permission-panel { padding: 0.85rem; }
-  .permission-panel-header { flex-direction: column; gap: 0.75rem; }
+
+  /* Permissões */
+  .permission-panel { padding: 0.75rem; }
+  .permission-panel-header { flex-direction: column; gap: 0.65rem; }
   .permission-toolbar { width: 100%; }
   .permission-toolbar .btn { flex: 1; }
+
+  .permissions-layout { gap: 0.65rem; }
+  .permissions-sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .permission-tab {
+    flex: 1 1 calc(50% - 0.2rem);
+    min-width: 0;
+    max-width: 100%;
+    padding: 0.6rem 0.75rem;
+    border-radius: 12px;
+    box-sizing: border-box;
+  }
+  .permission-tab strong { font-size: 0.82rem; }
+  .permission-tab span { font-size: 0.72rem; }
+
+  .permission-card { padding: 0.75rem; }
+  .permission-card-header { flex-direction: column; align-items: flex-start; gap: 0.3rem; }
+  .permission-option { gap: 0.55rem; padding: 0.65rem 0; }
+
+  /* Form */
   .form-actions { flex-direction: column; }
   .form-actions .btn { width: 100%; justify-content: center; }
+
+  /* Tabela */
   .table-wrap { border-radius: 12px; border: 1px solid #e2e8f0; }
   .data-table th, .data-table td { padding: 0.75rem 0.85rem; font-size: 0.875rem; }
   .action-buttons { flex-direction: row; gap: 0.4rem; }
@@ -516,7 +545,10 @@ watch(
 @media (max-width: 480px) {
   .page-header h2 { font-size: 1.2rem; }
   .card-header h3 { font-size: 1rem; }
-  .permission-tab { min-width: 150px; padding: 0.75rem 0.85rem; }
+  .permission-tab {
+    flex: 1 1 100%;
+    padding: 0.6rem 0.75rem;
+  }
   .input-group input { padding: 0.75rem 0.85rem; }
   .btn { padding: 0.7rem 1rem; }
 }

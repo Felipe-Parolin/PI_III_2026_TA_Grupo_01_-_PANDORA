@@ -105,6 +105,7 @@ const handleLogin = async () => {
     if (data.usuario) {
       localStorage.setItem('user_id', String(data.usuario.id))
       localStorage.setItem('nome_usuario', data.usuario.nome_usuario)
+      localStorage.setItem('is_superuser', String(data.usuario.is_superuser))
       if (data.usuario.empresa_id) {
         localStorage.setItem('empresa_id', String(data.usuario.empresa_id))
       }
@@ -117,9 +118,13 @@ const handleLogin = async () => {
     localStorage.setItem('tipo_perfil', 'Colaborador')
     localStorage.setItem('session_active', 'true')
 
-    const redirectPath = typeof route.query.redirect === 'string'
-      ? route.query.redirect
-      : '/dashboard'
+    const isSuperuser = data.usuario?.is_superuser === true
+
+    const redirectPath = isSuperuser
+      ? '/admin/dashboard'
+      : typeof route.query.redirect === 'string'
+        ? route.query.redirect
+        : '/dashboard'
 
     router.push(redirectPath)
     
