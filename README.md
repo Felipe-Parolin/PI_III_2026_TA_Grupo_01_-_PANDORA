@@ -33,7 +33,7 @@ Antes de tudo, instale as ferramentas abaixo caso ainda não as tenha:
 
 ### 2. Criar o arquivo `.env`
 
-Antes de rodar qualquer comando, crie o arquivo `.env` dentro da pasta `api/pandora`.
+Antes de rodar qualquer comando, crie o arquivo `.env` dentro da pasta `api`.
 
 #### 2.1 Gerar sua chave da Groq
 O projeto utiliza a API da Groq para as funcionalidades de IA. Você precisa gerar sua própria chave gratuita:
