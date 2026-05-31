@@ -27,7 +27,7 @@
     "model": "app_setor.setor",
     "pk": 1,
     "fields": {
-        "nome_setor": "Administra��o",
+        "nome_setor": "Administração",
         "empresa": 1
     }
 },
@@ -35,7 +35,7 @@
     "model": "app_setor.setor",
     "pk": 2,
     "fields": {
-        "nome_setor": "Manuten��o El�trica",
+        "nome_setor": "Manutenção Elétrica",
         "empresa": 1
     }
 },
@@ -651,7 +651,7 @@
         "password": "pbkdf2_sha256$1200000$ayAGK2pHIVQG6bjWalq5fe$jRg7GwwN9TtRJSFZswKzGyOlO+fe9luhF5l5pKR25b4=",
         "last_login": null,
         "is_superuser": false,
-        "nome_usuario": "Paulo M�ximo",
+        "nome_usuario": "Paulo Máximo",
         "email": "paulo@etec.sp.gov.br",
         "ativo": true,
         "is_staff": false,
@@ -718,32 +718,32 @@
     "model": "app_categoria.categoriadocumento",
     "pk": 1,
     "fields": {
-        "nome_categoria": "Manual do Usu�rio",
-        "descricao": "Documenta��o voltada ao uso cotidiano do equipamento. Cont�m instru��es de opera��o, funcionalidades, cuidados b�sicos, avisos de seguran�a e orienta��es para o usu�rio final."
+        "nome_categoria": "Manual do Usuário",
+        "descricao": "Documentação voltada ao uso cotidiano do equipamento. Contém instruções de operação, funcionalidades, cuidados básicos, avisos de segurança e orientações para o usuário final."
     }
 },
 {
     "model": "app_categoria.categoriadocumento",
     "pk": 2,
     "fields": {
-        "nome_categoria": "Manual T�cnico",
-        "descricao": "Documenta��o detalhada para t�cnicos e manuten��o. Inclui desmontagem, diagn�sticos, testes, calibra��o, especifica��es internas e procedimentos de reparo."
+        "nome_categoria": "Manual Técnico",
+        "descricao": "Documentação detalhada para técnicos e manutenção. Inclui desmontagem, diagnósticos, testes, calibração, especificações internas e procedimentos de reparo."
     }
 },
 {
     "model": "app_categoria.categoriadocumento",
     "pk": 3,
     "fields": {
-        "nome_categoria": "Esquema El�trico",
-        "descricao": "Diagramas que representam o circuito el�trico do equipamento. Mostram conex�es, componentes, fluxo de energia e servem de base para an�lise e troubleshooting."
+        "nome_categoria": "Esquema Elétrico",
+        "descricao": "Diagramas que representam o circuito elétrico do equipamento. Mostram conexões, componentes, fluxo de energia e servem de base para análise e troubleshooting."
     }
 },
 {
     "model": "app_categoria.categoriadocumento",
     "pk": 4,
     "fields": {
-        "nome_categoria": "Imagens da M�quina",
-        "descricao": "Registros visuais do equipamento. Podem incluir fotos gerais e detalhes de pe�as"
+        "nome_categoria": "Imagens da Máquina",
+        "descricao": "Registros visuais do equipamento. Podem incluir fotos gerais e detalhes de peças"
     }
 },
 {
@@ -783,7 +783,7 @@
         "data_abertura": "2026-05-03T22:47:39.847Z",
         "urgencia": "Baixa",
         "status": "Em Andamento",
-        "descricao_problema": "Travando muito, lentid�o, tela piscando e dando tilt",
+        "descricao_problema": "Travando muito, lentidão, tela piscando e dando tilt",
         "foto_problema": "",
         "usuario_abertura": 1,
         "equipamento": 21,
@@ -833,7 +833,7 @@
     "fields": {
         "data_abertura": "2026-05-18T23:56:01.597Z",
         "urgencia": "Alta",
-        "status": "Conclu�do",
+        "status": "Concluído",
         "descricao_problema": "Teste rapido Codex - PATCH igual tela UTF8",
         "foto_problema": "",
         "usuario_abertura": 5,
@@ -868,14 +868,14 @@
         "data_abertura": "2026-05-22T23:59:46.273Z",
         "urgencia": "Alta",
         "status": "Concluido",
-        "descricao_problema": "O computador est� piscando a tela descontroladamente... Acho que deve ser memoria ou placa de video, nao sei",
+        "descricao_problema": "O computador está piscando a tela descontroladamente... Acho que deve ser memoria ou placa de video, nao sei",
         "foto_problema": "",
         "usuario_abertura": 9,
         "equipamento": 22,
         "empresa": null,
         "usuario_tecnico": 9,
         "data_fechamento": "2026-05-23T00:05:38.886Z",
-        "descricao_solucao": "Foi retirado e colocado o pente de mem�ria RAM de novo e voltou a funcionar perfeitamente, era apenas mal contato..."
+        "descricao_solucao": "Foi retirado e colocado o pente de memória RAM de novo e voltou a funcionar perfeitamente, era apenas mal contato..."
     }
 },
 {
@@ -1042,7 +1042,7 @@
         "comentario": null,
         "campo_alterado": "status",
         "valor_anterior": "Em Andamento",
-        "valor_novo": "Conclu�do",
+        "valor_novo": "Concluído",
         "os": 26,
         "usuario_modificacao": 5
     }
@@ -1211,7 +1211,7 @@
         "comentario": null,
         "campo_alterado": "descricao_solucao",
         "valor_anterior": null,
-        "valor_novo": "Foi retirado e colocado o pente de mem�ria RAM de novo e voltou a funcionar perfeitamente, era apenas mal contato...",
+        "valor_novo": "Foi retirado e colocado o pente de memória RAM de novo e voltou a funcionar perfeitamente, era apenas mal contato...",
         "os": 29,
         "usuario_modificacao": 9
     }
