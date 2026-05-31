@@ -99,7 +99,7 @@ python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py loaddata seed.json
+python manage.py loaddata fixtures/seed.json
 python manage.py runserver
 ```
 
@@ -149,7 +149,7 @@ Abra esse endereço no seu navegador para usar o sistema.
 Com o ambiente virtual ativado e dentro da pasta `api`, rode:
 
 ```bash
-python manage.py dumpdata --natural-foreign --natural-primary --exclude auth.permission --exclude contenttypes --indent 2 > fixtures/seed.json
+python manage.py dumpdata --exclude auth.permission --exclude contenttypes --indent 4 --output fixtures\seed.json
 ```
 
 Depois commite o arquivo `api/fixtures/seed.json` no repositório. Os outros membros vão importá-lo automaticamente no passo 4.
