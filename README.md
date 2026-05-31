@@ -22,6 +22,8 @@ Antes de tudo, instale as ferramentas abaixo caso ainda não as tenha:
 - **Node.js** → https://nodejs.org/ *(escolha a versão LTS)*
 - **PostgreSQL 15+** → https://www.postgresql.org/download/ *(escolha seu sistema operacional)*
 
+> **Importante:** confirme que o VS Code exibe UTF-8 no canto inferior direito. Arquivos salvos em UTF-16 ou outras codificações podem impedir a importação dos dados pelo Django.
+
 ---
 
 ## Como rodar o projeto
@@ -110,7 +112,7 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py loaddata seed.json
+python manage.py loaddata fixtures/seed.json
 python manage.py runserver
 ```
 
@@ -148,7 +150,8 @@ Abra esse endereço no seu navegador para usar o sistema.
 
 Com o ambiente virtual ativado e dentro da pasta `api`, rode:
 
-```bash
+```powershell
+$env:PYTHONUTF8=1
 python manage.py dumpdata --exclude auth.permission --exclude contenttypes --indent 4 --output fixtures\seed.json
 ```
 
