@@ -79,7 +79,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'pandora_db',
         'USER': 'postgres',
-        'PASSWORD': '123',  # ← altere aqui
+        'PASSWORD': 'sua_senha_aqui',  # ← altere aqui
         'HOST': 'localhost',
         'PORT': '5432',
     }
