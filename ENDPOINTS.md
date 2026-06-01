@@ -42,7 +42,8 @@ Realiza login e retorna os tokens JWT.
   "usuario": {
     "id": 1,
     "nome_usuario": "Felipe",
-    "empresa_id": 1
+    "empresa_id": 1,
+    "is_superuser": false
   },
   "permissoes": ["ver_equipamentos", "editar_os"]
 }
@@ -90,6 +91,7 @@ O Django REST Framework com `DefaultRouter` gera automaticamente os seguintes pa
 
 ## Recursos
 
+- [Onboarding](#onboarding)
 - [Empresas](#empresas)
 - [Setores](#setores)
 - [Usuários](#usuários)
@@ -102,6 +104,39 @@ O Django REST Framework com `DefaultRouter` gera automaticamente os seguintes pa
 - [Categorias de Documento](#categorias-de-documento)
 - [Documentos de Equipamento](#documentos-de-equipamento)
 - [Análises LLM](#análises-llm)
+
+---
+
+## Onboarding
+
+> Exclusivo para superusuários. Cria em uma única transação atômica: a empresa, um setor padrão ("Administrativo"), um grupo "ADM" com todas as permissões cadastradas e o usuário administrador vinculado a eles.
+
+### `POST /api/owner/onboarding/`
+
+**Request Body:**
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `nome_fantasia` | string | Sim | Nome fantasia da empresa |
+| `cnpj` | string | Sim | CNPJ da empresa (deve ser único) |
+| `nome_usuario` | string | Sim | Nome de exibição do administrador |
+| `email` | string | Sim | E-mail de login do administrador (deve ser único) |
+| `senha` | string | Sim | Senha do administrador |
+
+**Response `201 Created`:**
+```json
+{
+  "detail": "Cliente cadastrado com sucesso.",
+  "empresa": "Nome da Empresa",
+  "usuario": "admin@empresa.com"
+}
+```
+
+| Código | Descrição |
+|--------|-----------|
+| `201` | Onboarding realizado com sucesso |
+| `400` | Campos obrigatórios ausentes, CNPJ ou e-mail já cadastrado |
+| `403` | Usuário autenticado não é superusuário |
+| `500` | Erro interno ao cadastrar |
 
 ---
 
@@ -121,11 +156,8 @@ O Django REST Framework com `DefaultRouter` gera automaticamente os seguintes pa
 **Campos:**
 | Campo | Tipo | Obrigatório | Descrição |
 |-------|------|-------------|-----------|
-| `nome_empresa` | string | Sim | Nome/razão social da empresa |
-| `cnpj` | string | Não | CNPJ da empresa |
-| `email_empresa` | string | Não | E-mail de contato |
-| `telefone` | string | Não | Telefone de contato |
-| `endereco` | string | Não | Endereço completo |
+| `nome_fantasia` | string | Sim | Nome fantasia da empresa |
+| `cnpj` | string | Sim | CNPJ da empresa (deve ser único) |
 
 ---
 
@@ -162,15 +194,43 @@ O Django REST Framework com `DefaultRouter` gera automaticamente os seguintes pa
 | `PUT` | `/api/usuarios/{id}/` | Atualiza completamente um usuário |
 | `PATCH` | `/api/usuarios/{id}/` | Atualiza parcialmente um usuário |
 | `DELETE` | `/api/usuarios/{id}/` | Remove um usuário |
+| `POST` | `/api/usuarios/trocar-senha/` | Altera a senha do usuário autenticado |
 
 **Campos:**
 | Campo | Tipo | Obrigatório | Descrição |
 |-------|------|-------------|-----------|
 | `nome_usuario` | string | Sim | Nome de exibição do usuário |
 | `email` | string | Sim | E-mail de login (deve ser único) |
-| `password` | string | Sim | Senha (armazenada com hash) |
+| `password` | string | Sim* | Senha (armazenada com hash). Obrigatório na criação; opcional na atualização |
 | `empresa` | integer | Não | ID da empresa vinculada ao usuário |
+| `setor` | integer | Não | ID do setor do usuário |
 | `grupos` | array | Não | Lista de IDs dos grupos de permissão |
+| `ativo` | boolean | Não | Define se o usuário está ativo (padrão: `true`) |
+| `is_staff` | boolean | Não | Indica acesso ao Django Admin (padrão: `false`) |
+
+---
+
+### `POST /api/usuarios/trocar-senha/`
+Altera a senha do usuário atualmente autenticado.
+
+**Request Body:**
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `senha_atual` | string | Sim | Senha atual do usuário |
+| `nova_senha` | string | Sim | Nova senha desejada |
+| `confirmar_senha` | string | Sim | Confirmação da nova senha (deve ser igual a `nova_senha`) |
+
+**Response `200 OK`:**
+```json
+{
+  "detail": "Senha alterada com sucesso."
+}
+```
+
+| Código | Descrição |
+|--------|-----------|
+| `200` | Senha alterada com sucesso |
+| `400` | Senha atual incorreta, senhas não conferem ou nova senha igual à atual |
 
 ---
 
@@ -212,6 +272,7 @@ O Django REST Framework com `DefaultRouter` gera automaticamente os seguintes pa
 | Campo | Tipo | Obrigatório | Descrição |
 |-------|------|-------------|-----------|
 | `nome_grupo` | string | Sim | Nome do grupo (ex: Administrador, Técnico) |
+| `empresa` | integer | Sim | ID da empresa à qual o grupo pertence |
 | `permissoes` | array | Não | Lista de IDs das permissões vinculadas |
 
 ---
@@ -405,6 +466,15 @@ Além das rotas padrão, este recurso possui três endpoints customizados para i
 | `POST` | `/api/analises-llm/analisar/` | Envia descrição de manutenção para análise pelo LLM |
 | `POST` | `/api/analises-llm/sugerir-solucao-os/` | Sugere solução para uma OS com base no histórico do equipamento |
 | `POST` | `/api/analises-llm/transcrever/` | Transcreve um arquivo de áudio para texto via LLM |
+
+**Campos (CRUD padrão):**
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `os` | integer | Sim | ID da OS vinculada à análise |
+| `pergunta_prompt` | string | Sim | Prompt enviado ao modelo LLM |
+| `resposta_ia` | string | Sim | Resposta retornada pelo modelo LLM |
+| `usuario_consulta` | integer | Não | ID do usuário que realizou a consulta |
+| `data_consulta` | datetime | Não | Data/hora da consulta *(gerada automaticamente)* |
 
 ---
 

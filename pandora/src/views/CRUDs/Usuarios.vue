@@ -264,6 +264,11 @@ const formatGroupCount = (groups) => `${getNormalizedGroupIds(groups).length} gr
 const formatPermissionCount = (permissionsList) => `${Array.isArray(permissionsList) ? permissionsList.length : 0} permissão(ões)`
 
 const saveUsuario = async () => {
+  if (form.value.grupos.length === 0) {
+    alert('O usuário deve ter pelo menos 1 grupo atribuído.')
+    return
+  }
+
   if (!isEmpresaValida) {
     alert('Empresa do usuário não identificada. Faça login novamente.')
     return
@@ -394,6 +399,10 @@ const selectAllGroups = () => {
 
 const clearGroups = () => {
   if (!canManageGroups.value) return
+  if (form.value.grupos.length <= 1) {
+    alert('O usuário deve ter pelo menos 1 grupo atribuído.')
+    return
+  }
   form.value.grupos = []
 }
 
